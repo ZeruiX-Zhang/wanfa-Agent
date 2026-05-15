@@ -1,0 +1,83 @@
+{
+  "trace_id": "7dc595fe-eef2-4708-8513-35bc7c293bb5",
+  "created_at": "2026-05-07T07:57:41.163924+00:00",
+  "selected_domain": "ops_runbook",
+  "router_latency_ms": 0.001,
+  "dense_latency_ms": 0.866,
+  "bm25_latency_ms": 0.089,
+  "fusion_latency_ms": 0.009,
+  "reranker_latency_ms": 0.065,
+  "llm_latency_ms": 0.238,
+  "total_latency_ms": 1.532,
+  "model": "local-mock",
+  "token_usage": {},
+  "sources": [
+    {
+      "chunk_id": "ops_runbook:1",
+      "document_id": "ops_runbook",
+      "domain": "ops_runbook",
+      "tenant_id": "demo",
+      "doc_type": "kb",
+      "access_roles": [
+        "employee",
+        "support",
+        "finance",
+        "ops",
+        "legal",
+        "analyst",
+        "manager"
+      ],
+      "section_path": "Payment Incident Runbook",
+      "filename": "ops_runbook.md",
+      "page": 1,
+      "score": 0.43278688524590164,
+      "rank": 1,
+      "source": "reranker",
+      "metadata": {
+        "component_ranks": {
+          "dense": 1,
+          "bm25": 1
+        },
+        "representative_source": "bm25",
+        "reranker_provider": "simple",
+        "original_source": "hybrid",
+        "original_score": 0.03278688524590164,
+        "term_overlap": 2
+      },
+      "text": "# Payment Incident Runbook\n\nFor payment gateway 502 errors, first check upstream provider health, retry rate, and recent deployment changes.\nP0 and P1 incidents require human confirmation before sending notifications or creating incident tickets.\n\nRollback requires approval from the incident commander. Read-only diagnostics are allowed before approval."
+    },
+    {
+      "chunk_id": "payment_runbook:1",
+      "document_id": "payment_runbook",
+      "domain": "ops_runbook",
+      "tenant_id": "demo",
+      "doc_type": "kb",
+      "access_roles": [
+        "employee",
+        "support",
+        "finance",
+        "ops",
+        "legal",
+        "analyst",
+        "manager"
+      ],
+      "section_path": "Payment Runbook",
+      "filename": "payment_runbook.md",
+      "page": 1,
+      "score": 0.016129032258064516,
+      "rank": 2,
+      "source": "reranker",
+      "metadata": {
+        "component_ranks": {
+          "dense": 2
+        },
+        "representative_source": "dense",
+        "reranker_provider": "simple",
+        "original_source": "hybrid",
+        "original_score": 0.016129032258064516,
+        "term_overlap": 0
+      },
+      "text": "# Payment Runbook\n\nPAY-502 indicates a payment gateway timeout.\n\nThe first response steps are to verify gateway health, inspect the retry queue, check the third-party channel status, and fail over to the backup channel if the primary path remains degraded.\n\nPAY-502 表示支付网关超时。\n首轮处置需要检查网关健康状态、重试队列、第三方通道状态，并在主通道持续异常时切换到备用通道。"
+    }
+  ]
+}

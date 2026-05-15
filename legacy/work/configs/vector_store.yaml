@@ -1,0 +1,5 @@
+type: local_json_vector_store
+storage_path: workspace/vector_store/vectors.json
+collection_name: enterprise_kb_demo
+distance_metric: cosine
+normalize_embeddings: true

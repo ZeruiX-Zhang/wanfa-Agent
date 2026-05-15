@@ -1,0 +1,19 @@
+services:
+  workflow-agent:
+    build: .
+    ports:
+      - "8770:8770"
+    environment:
+      APP_ENV: dev
+      API_KEY: change-me
+      LLM_BASE_URL: ""
+      LLM_API_KEY: ""
+      LLM_MODEL: ""
+      RAG_BASE_URL: http://host.docker.internal:8765
+      RAG_API_KEY: change-me
+      TRACE_STORE_PATH: data/traces/runs.jsonl
+      TICKET_STORE_PATH: data/tickets/tickets.jsonl
+      FINANCE_CSV_PATH: data/finance/financial_metrics.csv
+    volumes:
+      - ./data:/app/data
+

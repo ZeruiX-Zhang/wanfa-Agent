@@ -1,0 +1,118 @@
+{
+  "trace_id": "841f2491-77b6-4714-b88b-e196fd06c41f",
+  "created_at": "2026-05-07T04:41:01.042192+00:00",
+  "selected_domain": "customer_support",
+  "router_latency_ms": 0.02,
+  "dense_latency_ms": 0.839,
+  "bm25_latency_ms": 0.072,
+  "fusion_latency_ms": 0.012,
+  "reranker_latency_ms": 0.036,
+  "llm_latency_ms": 0.023,
+  "total_latency_ms": 1.162,
+  "model": "local-mock",
+  "token_usage": {},
+  "sources": [
+    {
+      "chunk_id": "enterprise_sla:1",
+      "document_id": "enterprise_sla",
+      "domain": "customer_support",
+      "tenant_id": "demo",
+      "doc_type": "kb",
+      "access_roles": [
+        "employee",
+        "support",
+        "finance",
+        "ops",
+        "legal",
+        "analyst",
+        "manager"
+      ],
+      "section_path": "paragraph-1",
+      "filename": "enterprise_sla.txt",
+      "page": 1,
+      "score": 0.5327868852459017,
+      "rank": 1,
+      "source": "reranker",
+      "metadata": {
+        "component_ranks": {
+          "dense": 1,
+          "bm25": 1
+        },
+        "representative_source": "bm25",
+        "reranker_provider": "simple",
+        "original_source": "hybrid",
+        "original_score": 0.03278688524590164,
+        "term_overlap": 4
+      },
+      "text": "Enterprise customer P1 incidents require a first response within 30 minutes."
+    },
+    {
+      "chunk_id": "enterprise_sla:2",
+      "document_id": "enterprise_sla",
+      "domain": "customer_support",
+      "tenant_id": "demo",
+      "doc_type": "kb",
+      "access_roles": [
+        "employee",
+        "support",
+        "finance",
+        "ops",
+        "legal",
+        "analyst",
+        "manager"
+      ],
+      "section_path": "paragraph-2",
+      "filename": "enterprise_sla.txt",
+      "page": 2,
+      "score": 0.282258064516129,
+      "rank": 2,
+      "source": "reranker",
+      "metadata": {
+        "component_ranks": {
+          "dense": 2,
+          "bm25": 2
+        },
+        "representative_source": "bm25",
+        "reranker_provider": "simple",
+        "original_source": "hybrid",
+        "original_score": 0.03225806451612903,
+        "term_overlap": 2
+      },
+      "text": "For P1 tickets, the support team must acknowledge the issue within 30 minutes, assign an owner, and notify the duty manager if the incident affects production users."
+    },
+    {
+      "chunk_id": "enterprise_sla:3",
+      "document_id": "enterprise_sla",
+      "domain": "customer_support",
+      "tenant_id": "demo",
+      "doc_type": "kb",
+      "access_roles": [
+        "employee",
+        "support",
+        "finance",
+        "ops",
+        "legal",
+        "analyst",
+        "manager"
+      ],
+      "section_path": "paragraph-3",
+      "filename": "enterprise_sla.txt",
+      "page": 3,
+      "score": 0.15674603174603174,
+      "rank": 3,
+      "source": "reranker",
+      "metadata": {
+        "component_ranks": {
+          "dense": 3,
+          "bm25": 3
+        },
+        "representative_source": "bm25",
+        "reranker_provider": "simple",
+        "original_source": "hybrid",
+        "original_score": 0.031746031746031744,
+        "term_overlap": 1
+      },
+      "text": "企业客户 P1 问题要求在 30 分钟内首次响应。\n支持团队需要在 30 分钟内确认问题、分配负责人，并在影响生产用户时通知值班经理。"
+    }
+  ]
+}

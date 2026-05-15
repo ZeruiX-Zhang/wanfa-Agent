@@ -1,0 +1,8 @@
+__pycache__/
+.pytest_cache/
+.venv/
+.env
+*.pyc
+storage/traces/*.jsonl
+storage/tickets/*.jsonl
+storage/analyst/charts/*.png

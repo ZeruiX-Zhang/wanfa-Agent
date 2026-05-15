@@ -1,0 +1,6 @@
+# Payment Incident Runbook
+
+For payment gateway 502 errors, first check upstream provider health, retry rate, and recent deployment changes.
+P0 and P1 incidents require human confirmation before sending notifications or creating incident tickets.
+
+Rollback requires approval from the incident commander. Read-only diagnostics are allowed before approval.

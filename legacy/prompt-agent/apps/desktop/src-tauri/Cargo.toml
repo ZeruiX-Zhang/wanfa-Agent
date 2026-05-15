@@ -1,0 +1,15 @@
+[package]
+name = "prompt-agent-desktop"
+version = "0.6.0"
+description = "PromptAgent desktop shell"
+authors = ["PromptAgent"]
+license = ""
+repository = ""
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+

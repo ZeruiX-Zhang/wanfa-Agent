@@ -1,0 +1,10 @@
+targets:
+  rag:
+    dataset: data/eval_sets/rag_eval.jsonl
+  agent:
+    dataset: data/eval_sets/agent_eval.jsonl
+  data-agent:
+    dataset: data/eval_sets/sql_eval.jsonl
+reports:
+  json: reports/eval_report.json
+  markdown: reports/eval_report.md

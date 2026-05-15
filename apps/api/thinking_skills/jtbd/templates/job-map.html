@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JTBD 任务地图</title>
+<style>
+:root{--bg:#1a1a2e;--surface:#16213e;--text:#e8e8e8;--accent:#4fc3f7;--warning:#ff9800;--success:#66bb6a;--border:#2a2a4a}
+[data-theme="light"]{--bg:#f8f9fa;--surface:#fff;--text:#1a1a2e;--accent:#0277bd;--warning:#e65100;--success:#2e7d32;--border:#e0e0e0}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);padding:2rem;max-width:800px;margin:0 auto;line-height:1.6}
+h1{font-size:1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:.5rem}
+.job-stmt{padding:1.25rem;background:var(--accent);color:#000;border-radius:8px;font-weight:700;font-size:1.1rem;text-align:center;margin-bottom:1.5rem}
+.layers{display:flex;flex-direction:column;gap:1rem}
+.layer{padding:1rem;background:var(--surface);border-radius:8px;border-left:3px solid var(--accent)}
+.layer-title{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--accent);margin-bottom:.4rem;font-weight:600}
+.layer-content{font-size:.9rem;opacity:.9}
+.section-title{font-size:.85rem;font-weight:600;margin-top:1.5rem;margin-bottom:.5rem;color:var(--warning)}
+.solutions,.gaps{padding:1rem;background:var(--surface);border-radius:8px}
+.item{padding:.3rem 0}
+.gap-item{color:var(--warning)}
+.theme-toggle{position:fixed;top:1rem;right:1rem;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.4rem .8rem;cursor:pointer;color:var(--text);font-size:.8rem}
+</style>
+</head>
+<body>
+<button class="theme-toggle" onclick="toggleTheme()">🌓</button>
+<h1>🎯 JTBD 任务地图</h1>
+<div id="content"></div>
+
+<script>
+const data = window.__THINKING_MODEL_DATA__ || {
+  job_statement:"当我在出差途中需要快速审批团队文档时，我希望能在手机上完成全部审批流程，这样我就不会阻塞团队进度",
+  functional:"在手机上查看、批注、审批文档，30 秒内完成",
+  emotional:"不焦虑——不用担心因为自己不在电脑前而耽误别人",
+  social:"被团队认为是高效、靠谱的领导",
+  current_solutions:["微信截图传阅","笔记本远程桌面","等回酒店再处理"],
+  gaps:["手机端无法批注 PDF","审批链断裂无提醒","离线场景完全不可用"]
+};
+
+let html = `<div class="job-stmt">"${data.job_statement}"</div><div class="layers">`;
+html += `<div class="layer"><div class="layer-title">⚙️ 功能层</div><div class="layer-content">${data.functional}</div></div>`;
+html += `<div class="layer"><div class="layer-title">💛 情感层</div><div class="layer-content">${data.emotional}</div></div>`;
+html += `<div class="layer"><div class="layer-title">👥 社会层</div><div class="layer-content">${data.social}</div></div></div>`;
+html += `<div class="section-title">📦 现有方案</div><div class="solutions">${data.current_solutions.map(s=>`<div class="item">• ${s}</div>`).join('')}</div>`;
+html += `<div class="section-title">⚠️ 未满足缺口</div><div class="gaps">${data.gaps.map(g=>`<div class="item gap-item">✗ ${g}</div>`).join('')}</div>`;
+document.getElementById('content').innerHTML = html;
+
+function toggleTheme(){const h=document.documentElement;h.dataset.theme=h.dataset.theme==='dark'?'light':'dark'}
+</script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+{
+  "collapse-filter": false,
+  "search": "-path:\"raw/inbox\" -path:\"_templates\"",
+  "showTags": true,
+  "showAttachments": false,
+  "hideUnresolved": false,
+  "showOrphans": true,
+  "collapse-color-groups": false,
+  "colorGroups": [
+    {
+      "query": "path:wiki/concepts",
+      "color": {
+        "a": 1,
+        "rgb": 13938026
+      }
+    },
+    {
+      "query": "path:wiki/questions",
+      "color": {
+        "a": 1,
+        "rgb": 15124111
+      }
+    },
+    {
+      "query": "path:wiki/sources OR path:raw/articles OR path:raw/papers OR path:raw/notes",
+      "color": {
+        "a": 1,
+        "rgb": 12104100
+      }
+    },
+    {
+      "query": "path:wiki/people OR path:wiki/organizations OR path:wiki/projects",
+      "color": {
+        "a": 1,
+        "rgb": 9072186
+      }
+    },
+    {
+      "query": "path:wiki/maps",
+      "color": {
+        "a": 1,
+        "rgb": 16111445
+      }
+    },
+    {
+      "query": "path:wiki/glossary",
+      "color": {
+        "a": 1,
+        "rgb": 8158332
+      }
+    },
+    {
+      "query": "path:wiki/contradictions OR path:wiki/claims",
+      "color": {
+        "a": 1,
+        "rgb": 12880474
+      }
+    }
+  ],
+  "collapse-display": false,
+  "showArrow": false,
+  "textFadeMultiplier": 0,
+  "nodeSizeMultiplier": 1.2,
+  "lineSizeMultiplier": 1,
+  "collapse-forces": false,
+  "centerStrength": 0.5,
+  "repelStrength": 20,
+  "linkStrength": 1,
+  "linkDistance": 250,
+  "scale": 0.36288736930121135,
+  "close": true
+}

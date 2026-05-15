@@ -1,0 +1,7 @@
+# Customer Support Handbook
+
+Enterprise customers with P1 incidents receive an initial response within 30 minutes.
+P1 incidents target workaround or resolution within 8 business hours when the issue is reproducible.
+
+Refund requests require order validation, entitlement review, and support manager approval.
+Support agents should never ask customers for passwords, API keys, or one-time codes.

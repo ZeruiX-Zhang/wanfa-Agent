@@ -1,0 +1,55 @@
+services:
+  api:
+    build:
+      context: .
+    ports:
+      - "8765:8765"
+    environment:
+      RAG_DEMO_HOST: 0.0.0.0
+      RAG_DEMO_PORT: "8765"
+      AUTH_ENABLED: "true"
+      DEMO_API_KEY: change-me
+      VECTOR_BACKEND: ${VECTOR_BACKEND:-faiss}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://rag_user:rag_password@postgres:5432/rag_agent_demo}
+      TRACE_SAMPLE_RATE: ${TRACE_SAMPLE_RATE:-1.0}
+      OTEL_ENABLED: ${OTEL_ENABLED:-false}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+    volumes:
+      - api_storage:/app/storage
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8765/health/live', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    profiles: ["pgvector"]
+    environment:
+      POSTGRES_USER: rag_user
+      POSTGRES_PASSWORD: rag_password
+      POSTGRES_DB: rag_agent_demo
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgvector_data:/var/lib/postgresql/data
+      - ./app/db/migrations/001_init_pgvector.sql:/docker-entrypoint-initdb.d/001_init_pgvector.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rag_user -d rag_agent_demo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.104.0
+    profiles: ["otel"]
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./docs/otel-collector.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+
+volumes:
+  api_storage:
+  pgvector_data:

@@ -1,0 +1,33 @@
+{
+  "items": [
+    {
+      "type": "file",
+      "path": "README.md",
+      "title": "📘 上手指南"
+    },
+    {
+      "type": "file",
+      "path": "wiki/index.md",
+      "title": "🗺️ Wiki 总导航"
+    },
+    {
+      "type": "file",
+      "path": "wiki/maps/ai-engineering-map.md",
+      "title": "🌟 AI 工程主题地图"
+    },
+    {
+      "type": "file",
+      "path": "wiki/questions/inbox-processing-status.md",
+      "title": "📥 Inbox 状态"
+    },
+    {
+      "type": "file",
+      "path": "wiki/log.md",
+      "title": "📜 操作日志"
+    },
+    {
+      "type": "graph",
+      "title": "🔗 知识图谱(Graph View)"
+    }
+  ]
+}

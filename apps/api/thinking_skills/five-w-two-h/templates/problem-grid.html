@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5W2H 问题网格</title>
+<style>
+:root{--bg:#1a1a2e;--surface:#16213e;--text:#e8e8e8;--accent:#4fc3f7;--warning:#ff9800;--success:#66bb6a;--border:#2a2a4a}
+[data-theme="light"]{--bg:#f8f9fa;--surface:#fff;--text:#1a1a2e;--accent:#0277bd;--warning:#e65100;--success:#2e7d32;--border:#e0e0e0}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);padding:2rem;max-width:800px;margin:0 auto;line-height:1.6}
+h1{font-size:1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:.5rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem}
+.cell{padding:1rem;background:var(--surface);border-radius:8px;border-top:3px solid var(--accent)}
+.cell-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--accent);margin-bottom:.4rem;font-weight:600}
+.cell-content{font-size:.95rem;opacity:.9}
+.summary{margin-top:2rem;padding:1.25rem;background:var(--accent);color:#000;border-radius:8px;font-weight:600}
+.theme-toggle{position:fixed;top:1rem;right:1rem;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.4rem .8rem;cursor:pointer;color:var(--text);font-size:.8rem}
+</style>
+</head>
+<body>
+<button class="theme-toggle" onclick="toggleTheme()">🌓</button>
+<h1>📋 5W2H 问题网格</h1>
+<div class="grid" id="grid"></div>
+<div id="summary"></div>
+
+<script>
+const data = window.__THINKING_MODEL_DATA__ || {
+  cells: [
+    {dimension:"What（什么）", content:"新用户注册流程转化率从 60% 降至 35%"},
+    {dimension:"Why（为什么）", content:"第三步手机验证环节流失严重"},
+    {dimension:"Who（谁）", content:"25-35 岁首次使用的移动端用户"},
+    {dimension:"When（何时）", content:"最近 2 周，iOS 15.4 更新后"},
+    {dimension:"Where（何处）", content:"注册流程第 3 步短信验证页"},
+    {dimension:"How（如何）", content:"用户点击发送验证码后无响应，直接退出"},
+    {dimension:"How much（多少）", content:"日均流失 1200 人，预估月损失 ¥36 万"}
+  ],
+  summary:"iOS 15.4 更新后短信验证 SDK 兼容性问题导致验证码发送静默失败，25-35 岁新用户群体流失严重"
+};
+
+const grid = document.getElementById('grid');
+data.cells.forEach(c => {
+  grid.innerHTML += `<div class="cell"><div class="cell-label">${c.dimension}</div><div class="cell-content">${c.content}</div></div>`;
+});
+if (data.summary) {
+  document.getElementById('summary').innerHTML = `<div class="summary">📌 综合结论：${data.summary}</div>`;
+}
+
+function toggleTheme(){const h=document.documentElement;h.dataset.theme=h.dataset.theme==='dark'?'light':'dark'}
+</script>
+</body>
+</html>

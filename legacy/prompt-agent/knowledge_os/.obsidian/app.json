@@ -1,0 +1,16 @@
+{
+  "promptDelete": true,
+  "alwaysUpdateLinks": true,
+  "newFileLocation": "folder",
+  "newFileFolderPath": "wiki",
+  "attachmentFolderPath": "raw/inbox/images",
+  "useMarkdownLinks": false,
+  "newLinkFormat": "shortest",
+  "showLineNumber": false,
+  "spellcheck": false,
+  "showInlineTitle": true,
+  "trashOption": "system",
+  "userIgnoreFilters": [
+    "raw/inbox/"
+  ]
+}

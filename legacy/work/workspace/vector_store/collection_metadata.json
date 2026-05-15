@@ -1,0 +1,14 @@
+{
+  "collection_name": "enterprise_kb_demo",
+  "vector_store_type": "local_json_vector_store",
+  "embedding_model_id": "mock_local_128",
+  "provider": "mock",
+  "dimension": 128,
+  "distance_metric": "cosine",
+  "normalize_embeddings": true,
+  "chunk_count": 6,
+  "doc_count": 6,
+  "updated_at": "2026-05-07T15:30:09+00:00",
+  "compatible": true,
+  "needs_rebuild": false
+}

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMART 目标检查器</title>
+<style>
+:root{--bg:#1a1a2e;--surface:#16213e;--text:#e8e8e8;--accent:#4fc3f7;--warning:#ff9800;--success:#66bb6a;--border:#2a2a4a}
+[data-theme="light"]{--bg:#f8f9fa;--surface:#fff;--text:#1a1a2e;--accent:#0277bd;--warning:#e65100;--success:#2e7d32;--border:#e0e0e0}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);padding:2rem;max-width:720px;margin:0 auto;line-height:1.6}
+h1{font-size:1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:.5rem}
+.original{padding:1rem;background:var(--surface);border-radius:8px;opacity:.6;text-decoration:line-through;margin-bottom:.75rem;border-left:3px solid var(--warning)}
+.rewritten{padding:1rem;background:var(--surface);border-radius:8px;font-weight:600;font-size:1.05rem;margin-bottom:1.5rem;border-left:3px solid var(--success)}
+.checklist{display:flex;flex-direction:column;gap:.75rem}
+.check-item{display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;background:var(--surface);border-radius:8px}
+.indicator{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0}
+.indicator.pass{background:var(--success);color:#fff}
+.indicator.fail{background:var(--warning);color:#fff}
+.check-dim{font-weight:600;min-width:2rem}
+.check-detail{font-size:.9rem;opacity:.85}
+.theme-toggle{position:fixed;top:1rem;right:1rem;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.4rem .8rem;cursor:pointer;color:var(--text);font-size:.8rem}
+</style>
+</head>
+<body>
+<button class="theme-toggle" onclick="toggleTheme()">🌓</button>
+<h1>✅ SMART 目标检查器</h1>
+<div id="content"></div>
+
+<script>
+const data = window.__THINKING_MODEL_DATA__ || {
+  original_goal:"提高用户满意度",
+  rewritten_goal:"在 Q3 结束前（9月30日），将 NPS 评分从 35 提升至 50，通过优化客服响应时间和售后流程实现",
+  checks:[
+    {dim:"S",label:"具体",pass:true,detail:"明确了 NPS 指标和改进手段"},
+    {dim:"M",label:"可衡量",pass:true,detail:"NPS 35 → 50，可量化追踪"},
+    {dim:"A",label:"可实现",pass:true,detail:"15 分提升在行业基准内合理"},
+    {dim:"R",label:"相关性",pass:true,detail:"NPS 直接关联用户留存和营收"},
+    {dim:"T",label:"有时限",pass:true,detail:"Q3 结束（9月30日）为明确截止日"}
+  ]
+};
+
+let html = `<div class="original">原始：${data.original_goal}</div>`;
+html += `<div class="rewritten">🎯 ${data.rewritten_goal}</div>`;
+html += '<div class="checklist">';
+data.checks.forEach(c => {
+  html += `<div class="check-item"><div class="indicator ${c.pass?'pass':'fail'}">${c.pass?'✓':'✗'}</div><div class="check-dim">${c.dim}</div><div class="check-detail"><strong>${c.label}</strong>：${c.detail}</div></div>`;
+});
+html += '</div>';
+document.getElementById('content').innerHTML = html;
+
+function toggleTheme(){const h=document.documentElement;h.dataset.theme=h.dataset.theme==='dark'?'light':'dark'}
+</script>
+</body>
+</html>

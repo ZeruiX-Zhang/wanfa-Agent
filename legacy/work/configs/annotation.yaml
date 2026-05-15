@@ -1,0 +1,7 @@
+enabled: true
+provider: mock
+model: mock-chat
+annotate_level: document
+require_human_review: true
+max_input_chars: 6000
+risk_note_policy: metadata_only

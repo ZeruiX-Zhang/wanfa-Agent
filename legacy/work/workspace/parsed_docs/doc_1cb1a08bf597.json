@@ -1,0 +1,28 @@
+{
+  "doc_id": "doc_1cb1a08bf597",
+  "filename": "ops_runbook_0d66.md",
+  "elements": [
+    {
+      "block_id": "block_0001",
+      "page": 1,
+      "type": "heading",
+      "text": "# Payment Incident Runbook",
+      "section_path": "Payment Incident Runbook"
+    },
+    {
+      "block_id": "block_0002",
+      "page": 1,
+      "type": "paragraph",
+      "text": "For payment gateway 502 errors, first check upstream provider health, retry rate, and recent deployment changes.\nP0 and P1 incidents require human confirmation before sending notifications or creating incident tickets.",
+      "section_path": "document"
+    },
+    {
+      "block_id": "block_0003",
+      "page": 1,
+      "type": "paragraph",
+      "text": "Rollback requires approval from the incident commander. Read-only diagnostics are allowed before approval.",
+      "section_path": "document"
+    }
+  ],
+  "text": "# Payment Incident Runbook\n\nFor payment gateway 502 errors, first check upstream provider health, retry rate, and recent deployment changes.\nP0 and P1 incidents require human confirmation before sending notifications or creating incident tickets.\n\nRollback requires approval from the incident commander. Read-only diagnostics are allowed before approval.\n"
+}

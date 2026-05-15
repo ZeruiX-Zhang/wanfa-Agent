@@ -1,0 +1,8 @@
+.env
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+.tmp/
+data/charts/*.png
+data/traces/*.jsonl

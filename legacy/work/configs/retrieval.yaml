@@ -1,0 +1,21 @@
+mode: hybrid
+vector_top_k: 8
+bm25_top_k: 8
+final_top_k: 5
+rerank: true
+min_evidence_score: 0.05
+chunking:
+  strategy: heading-aware
+  fallback_strategy: fixed-size
+  chunk_size: 800
+  overlap: 120
+retrieval:
+  mode: hybrid
+  top_k: 5
+  retrieve_k: 30
+  rerank_k: 5
+  query_rewrite: simple_keyword_expansion
+  fusion: reciprocal_rank_fusion
+reranker:
+  provider: mock
+  fallback: simple_overlap

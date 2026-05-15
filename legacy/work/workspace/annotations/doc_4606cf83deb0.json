@@ -1,0 +1,18 @@
+{
+  "annotation_id": "ann_355468be1fc9",
+  "doc_id": "doc_4606cf83deb0",
+  "doc_summary": "customer_support_handbook_72c5.md contains 1 retrieval chunks about # Customer Support Handbook Enterprise customers with P1 incidents receive an initial response within 30 minutes. P1 inc",
+  "doc_type": "policy",
+  "business_domain": "enterprise_knowledge_base",
+  "tags": "[\"md\", \"Demo Mode\", \"rag-ready\"]",
+  "key_terms": "[\"30\", \"8\", \"an\", \"business\", \"customer\", \"customers\", \"enterprise\", \"handbook\", \"hou\", \"incidents\", \"initial\", \"minutes\"]",
+  "key_facts": "[\"# Customer Support Handbook Enterprise customers with P1 incidents receive an initial response within 30 minutes. P1 incidents target workaround or resolution within 8 business hou\"]",
+  "section_summaries": "{\"Customer Support Handbook\": \"# Customer Support Handbook Enterprise customers with P1 incidents receive an initial response within 30 minutes. P1 incidents target workaround or resolution within 8 business hou\"}",
+  "table_descriptions": "[]",
+  "possible_questions": "[\"What does customer_support_handbook_72c5.md say about Customer Support Handbook?\", \"What are the key rules in this document?\", \"Which sources support the answer?\", \"What should be escalated to a human reviewer?\"]",
+  "glossary": "{\"30\": \"Term detected in customer_support_handbook_72c5.md\", \"8\": \"Term detected in customer_support_handbook_72c5.md\", \"an\": \"Term detected in customer_support_handbook_72c5.md\", \"business\": \"Term detected in customer_support_handbook_72c5.md\", \"customer\": \"Term detected in customer_support_handbook_72c5.md\", \"customers\": \"Term detected in customer_support_handbook_72c5.md\"}",
+  "confidence": 0.78,
+  "human_review_status": "pending",
+  "created_at": "2026-05-07T15:30:09+00:00",
+  "updated_at": "2026-05-07T15:30:09+00:00"
+}

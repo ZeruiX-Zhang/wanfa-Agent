@@ -1,0 +1,13 @@
+{
+  "name": "prompt-agent-desktop",
+  "version": "0.6.0",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/dev-server.mjs",
+    "tauri:dev": "node scripts/tauri-dev.mjs"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0"
+  }
+}

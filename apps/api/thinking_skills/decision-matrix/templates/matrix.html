@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>决策矩阵</title>
+<style>
+:root{--bg:#1a1a2e;--surface:#16213e;--text:#e8e8e8;--accent:#4fc3f7;--success:#66bb6a;--border:#2a2a4a;--highlight:#1b5e20}
+[data-theme="light"]{--bg:#f8f9fa;--surface:#fff;--text:#1a1a2e;--accent:#0277bd;--success:#2e7d32;--border:#e0e0e0;--highlight:#c8e6c9}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);padding:2rem;max-width:900px;margin:0 auto}
+h1{font-size:1.5rem;margin-bottom:1.5rem}
+table{width:100%;border-collapse:collapse;margin:1rem 0;background:var(--surface);border-radius:8px;overflow:hidden}
+th,td{padding:.75rem 1rem;text-align:left;border-bottom:1px solid var(--border)}
+th{background:var(--border);font-size:.8rem;text-transform:uppercase;letter-spacing:.03em}
+.winner{background:var(--highlight)}
+.score-bar{height:6px;border-radius:3px;background:var(--accent);margin-top:4px}
+.recommendation{margin-top:1.5rem;padding:1.25rem;background:var(--accent);color:#000;border-radius:8px;font-weight:600}
+.sensitivity{margin-top:1rem;padding:1rem;border:1px solid var(--border);border-radius:8px;font-size:.9rem}
+.theme-toggle{position:fixed;top:1rem;right:1rem;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.4rem .8rem;cursor:pointer;color:var(--text);font-size:.8rem}
+</style>
+</head>
+<body>
+<button class="theme-toggle" onclick="toggleTheme()">🌓</button>
+<h1>⚖️ 决策矩阵</h1>
+<table id="matrix"></table>
+<div id="recommendation"></div>
+<div id="sensitivity" class="sensitivity"></div>
+
+<script>
+const data = window.__THINKING_MODEL_DATA__ || {
+  criteria: [
+    {name:"市场规模",weight:0.3},
+    {name:"技术可行性",weight:0.25},
+    {name:"竞争壁垒",weight:0.25},
+    {name:"启动成本",weight:0.2}
+  ],
+  options: ["AI 搜索工具","电商评论分析","知识管理 SaaS"],
+  scores: [
+    [4,5,3,4],
+    [5,4,4,3],
+    [3,4,5,2]
+  ],
+  recommendation: "电商评论分析 — 市场需求明确且技术门槛适中",
+  sensitivity: "如果「竞争壁垒」权重从 0.25 提升到 0.4，知识管理 SaaS 会胜出"
+};
+
+const table = document.getElementById('matrix');
+const maxScore = 5;
+
+// Header
+let html = '<thead><tr><th>选项</th>';
+data.criteria.forEach(c => { html += `<th>${c.name}<br><small>×${c.weight}</small></th>`; });
+html += '<th>加权总分</th></tr></thead><tbody>';
+
+// Find winner
+const totals = data.scores.map(row =>
+  row.reduce((sum, score, i) => sum + score * data.criteria[i].weight, 0)
+);
+const maxTotal = Math.max(...totals);
+
+// Rows
+data.options.forEach((opt, i) => {
+  const total = totals[i];
+  const isWinner = total === maxTotal;
+  html += `<tr class="${isWinner ? 'winner' : ''}"><td><strong>${opt}</strong></td>`;
+  data.scores[i].forEach((score, j) => {
+    const weighted = (score * data.criteria[j].weight).toFixed(2);
+    const pct = (score / maxScore * 100);
+    html += `<td>${score} <small>(${weighted})</small><div class="score-bar" style="width:${pct}%"></div></td>`;
+  });
+  html += `<td><strong>${total.toFixed(2)}</strong></td></tr>`;
+});
+html += '</tbody>';
+table.innerHTML = html;
+
+if (data.recommendation) {
+  document.getElementById('recommendation').innerHTML =
+    `<div class="recommendation">🏆 推荐：${data.recommendation}</div>`;
+}
+if (data.sensitivity) {
+  document.getElementById('sensitivity').innerHTML =
+    `<strong>敏感性分析：</strong>${data.sensitivity}`;
+}
+
+function toggleTheme() {
+  const h = document.documentElement;
+  h.dataset.theme = h.dataset.theme === 'dark' ? 'light' : 'dark';
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "annotation_id": "ann_e3c33cf350fa",
+  "doc_id": "doc_0c8c6aa8fa40",
+  "doc_summary": "enterprise_kb.md contains 1 retrieval chunks about # Enterprise AI Workbench Policy The workbench combines Knowledge RAG, Workflow Agent, Data Analyst Agent, Evaluation Ce",
+  "doc_type": "knowledge_base",
+  "business_domain": "enterprise_knowledge_base",
+  "tags": "[\"md\", \"Demo Mode\", \"rag-ready\"]",
+  "key_terms": "[\"agent\", \"ai\", \"all\", \"analyst\", \"and\", \"calls\", \"center\", \"combines\", \"data\", \"enterprise\", \"evaluation\", \"go\"]",
+  "key_facts": "[\"# Enterprise AI Workbench Policy The workbench combines Knowledge RAG, Workflow Agent, Data Analyst Agent, Evaluation Center, and Observability. All model calls must go through the\"]",
+  "section_summaries": "{\"Enterprise AI Workbench Policy\": \"# Enterprise AI Workbench Policy The workbench combines Knowledge RAG, Workflow Agent, Data Analyst Agent, Evaluation Center, and Observability. All model calls must go through the\"}",
+  "table_descriptions": "[]",
+  "possible_questions": "[\"What does enterprise_kb.md say about Enterprise AI Workbench Policy?\", \"What are the key rules in this document?\", \"Which sources support the answer?\", \"What should be escalated to a human reviewer?\"]",
+  "glossary": "{\"agent\": \"Term detected in enterprise_kb.md\", \"ai\": \"Term detected in enterprise_kb.md\", \"all\": \"Term detected in enterprise_kb.md\", \"analyst\": \"Term detected in enterprise_kb.md\", \"and\": \"Term detected in enterprise_kb.md\", \"calls\": \"Term detected in enterprise_kb.md\"}",
+  "confidence": 0.78,
+  "human_review_status": "pending",
+  "created_at": "2026-05-07T15:30:08+00:00",
+  "updated_at": "2026-05-07T15:30:08+00:00"
+}

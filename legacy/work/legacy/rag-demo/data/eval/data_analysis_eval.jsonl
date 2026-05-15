@@ -1,0 +1,1 @@
+{"query": "sales_report.csv 中有哪些销售字段？", "expected_domain": "data_analysis", "expected_source": "sales_report.csv"}

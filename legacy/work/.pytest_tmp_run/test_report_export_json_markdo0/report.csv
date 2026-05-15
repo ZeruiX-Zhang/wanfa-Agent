@@ -1,0 +1,17 @@
+metric_name,current_value,normalized_score,weight,weighted_score,judgement,explanation,suggestion
+Recall@5,0.86,86.0,18.0,15.48,Excellent,Whether top 5 results recall the expected evidence.,补充业务问法、检查切片粒度，必要时开启 hybrid retrieval。
+nDCG@10,0.79,79.0,14.0,11.06,Good,Whether relevant evidence is ranked near the top.,增加 reranker，或优化 query rewrite 和标题 metadata。
+MRR@10,0.78,78.0,10.0,7.8,Good,Rank of the first relevant evidence.,提升首个正确证据排名，可加入 rerank 和 hard negative cases。
+Hit@1,0.72,72.0,7.0,5.04,Usable,Whether the first result directly hits expected evidence.,强化高价值 FAQ、术语同义词和标题路径。
+Precision@5,0.74,74.0,6.0,4.44,Usable,Share of relevant results in top 5.,降低噪声 chunk，收紧过滤条件或提高 rerank 权重。
+Pair Accuracy,0.88,88.0,5.0,4.4,Excellent,Positive pairs should score higher than negative pairs.,补充正负样本对，覆盖核心业务概念。
+Hard Negative Margin,0.09,60.0,7.0,4.2,Usable,Separates near but semantically different business concepts.,增加容易混淆的 hard negative 测试，如退款流程与退货规则。
+Score Distribution Quality,distribution score 100,100.0,3.0,3.0,Excellent,Positive and negative score distributions should be separable.,检查相似度分布，补充更真实的负样本和近义业务问题。
+Context Recall,0.80,80.0,5.0,4.0,Good,Required evidence is included in final context.,提高 top_k、优化切片和召回融合策略。
+Context Precision,0.78,78.0,5.0,3.9,Good,Final context is concise and low noise.,减少过长 chunk，过滤重复内容，启用 rerank。
+Citation Support Rate,0.83,83.0,5.0,4.15,Good,Citations support the answer and are system-generated.,检查 citation formatter 和 chunk metadata，避免引用不支持答案。
+Avg Latency,620ms,80.65,5.0,4.0323,Good,Average embedding and retrieval latency.,调大 batch，使用本地缓存或更快的 embedding provider。
+P95 Latency,1700ms,88.24,3.0,2.6471,Excellent,Tail latency.,检查长尾请求、超时重试和并发批处理。
+Cost / 1k chunks,0.0300,66.67,3.0,2.0,Usable,API or local inference cost.,降低 API 调用量，缓存 embedding，或改用本地模型。
+Storage / 1k chunks,3.91 MB,100.0,2.0,2.0,Excellent,Storage cost from embedding dimension and chunk count.,控制维度和 chunk 数，按 collection 做生命周期管理。
+Stability,2.0% failure,98.0,2.0,1.96,Excellent,"Failure rate, timeout rate, NaN/Inf and dimension stability.",排查失败率、超时、NaN/Inf 和维度不一致问题。

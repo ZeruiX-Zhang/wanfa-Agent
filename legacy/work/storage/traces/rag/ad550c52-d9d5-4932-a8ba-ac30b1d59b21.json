@@ -1,0 +1,83 @@
+{
+  "trace_id": "ad550c52-d9d5-4932-a8ba-ac30b1d59b21",
+  "created_at": "2026-05-07T07:57:12.273826+00:00",
+  "selected_domain": "customer_support",
+  "router_latency_ms": 0.001,
+  "dense_latency_ms": 0.708,
+  "bm25_latency_ms": 0.064,
+  "fusion_latency_ms": 0.008,
+  "reranker_latency_ms": 0.037,
+  "llm_latency_ms": 0.216,
+  "total_latency_ms": 1.279,
+  "model": "local-mock",
+  "token_usage": {},
+  "sources": [
+    {
+      "chunk_id": "customer_support_handbook:1",
+      "document_id": "customer_support_handbook",
+      "domain": "customer_support",
+      "tenant_id": "demo",
+      "doc_type": "kb",
+      "access_roles": [
+        "employee",
+        "support",
+        "finance",
+        "ops",
+        "legal",
+        "analyst",
+        "manager"
+      ],
+      "section_path": "Customer Support Handbook",
+      "filename": "customer_support_handbook.md",
+      "page": 1,
+      "score": 0.5327868852459017,
+      "rank": 1,
+      "source": "reranker",
+      "metadata": {
+        "component_ranks": {
+          "dense": 1,
+          "bm25": 1
+        },
+        "representative_source": "bm25",
+        "reranker_provider": "simple",
+        "original_source": "hybrid",
+        "original_score": 0.03278688524590164,
+        "term_overlap": 3
+      },
+      "text": "# Customer Support Handbook\n\nEnterprise customers with P1 incidents receive an initial response within 30 minutes.\nP1 incidents target workaround or resolution within 8 business hours when the issue is reproducible.\n\nRefund requests require order validation, entitlement review, and support manager approval.\nSupport agents should never ask customers for passwords, API keys, or one-time codes."
+    },
+    {
+      "chunk_id": "enterprise_sla:1",
+      "document_id": "enterprise_sla",
+      "domain": "customer_support",
+      "tenant_id": "demo",
+      "doc_type": "kb",
+      "access_roles": [
+        "employee",
+        "support",
+        "finance",
+        "ops",
+        "legal",
+        "analyst",
+        "manager"
+      ],
+      "section_path": "document",
+      "filename": "enterprise_sla.txt",
+      "page": 1,
+      "score": 0.016129032258064516,
+      "rank": 2,
+      "source": "reranker",
+      "metadata": {
+        "component_ranks": {
+          "dense": 2
+        },
+        "representative_source": "dense",
+        "reranker_provider": "simple",
+        "original_source": "hybrid",
+        "original_score": 0.016129032258064516,
+        "term_overlap": 0
+      },
+      "text": "Enterprise customer P1 incidents require a first response within 30 minutes.\n\nFor P1 tickets, the support team must acknowledge the issue within 30 minutes, assign an owner, and notify the duty manager if the incident affects production users.\n\n企业客户 P1 问题要求在 30 分钟内首次响应。\n支持团队需要在 30 分钟内确认问题、分配负责人，并在影响生产用户时通知值班经理。"
+    }
+  ]
+}

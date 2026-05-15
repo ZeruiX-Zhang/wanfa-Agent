@@ -1,0 +1,24 @@
+max_steps: 6
+tool_timeout_seconds: 10
+tools:
+  search_knowledge_base:
+    risk_level: low
+    requires_confirmation: false
+  create_ticket_mock:
+    risk_level: high
+    requires_confirmation: true
+  summarize_conversation:
+    risk_level: low
+    requires_confirmation: false
+  generate_customer_reply:
+    risk_level: medium
+    requires_confirmation: false
+  query_data_agent:
+    risk_level: medium
+    requires_confirmation: false
+  simple_python_math:
+    risk_level: low
+    requires_confirmation: false
+  notify_human_agent:
+    risk_level: high
+    requires_confirmation: true

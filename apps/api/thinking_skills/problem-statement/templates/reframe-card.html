@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>问题重构卡</title>
+<style>
+:root{--bg:#1a1a2e;--surface:#16213e;--text:#e8e8e8;--accent:#4fc3f7;--warning:#ff9800;--success:#66bb6a;--border:#2a2a4a}
+[data-theme="light"]{--bg:#f8f9fa;--surface:#fff;--text:#1a1a2e;--accent:#0277bd;--warning:#e65100;--success:#2e7d32;--border:#e0e0e0}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);padding:2rem;max-width:720px;margin:0 auto;line-height:1.6}
+h1{font-size:1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:.5rem}
+.surface-stmt{padding:1rem 1.25rem;background:var(--surface);border-radius:8px;text-decoration:line-through;opacity:.6;border-left:3px solid var(--warning);margin-bottom:1rem}
+.surface-label,.reframe-label,.section-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.25rem;font-weight:600}
+.surface-label{color:var(--warning)}
+.reframe-label{color:var(--success)}
+.reframe-stmt{padding:1rem 1.25rem;background:var(--surface);border-radius:8px;border-left:3px solid var(--success);margin-bottom:1.5rem;font-weight:600;font-size:1.1rem}
+.section-label{color:var(--accent);margin-top:1.5rem;margin-bottom:.5rem}
+.list{padding:1rem;background:var(--surface);border-radius:8px}
+.list-item{padding:.4rem 0;border-bottom:1px solid var(--border)}
+.list-item:last-child{border-bottom:none}
+.theme-toggle{position:fixed;top:1rem;right:1rem;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.4rem .8rem;cursor:pointer;color:var(--text);font-size:.8rem}
+</style>
+</head>
+<body>
+<button class="theme-toggle" onclick="toggleTheme()">🌓</button>
+<h1>🔄 问题重构</h1>
+<div id="content"></div>
+
+<script>
+const data = window.__THINKING_MODEL_DATA__ || {
+  surface_statement:"我们的 App 太慢了",
+  reframed_statement:"在 3G 网络环境下，首屏加载时间超过 8 秒，导致 40% 用户在等待中流失",
+  constraints:["团队 3 人，2 周交付","不能更换现有后端架构","预算 ¥5000 以内"],
+  success_criteria:["首屏加载 < 3 秒（4G 环境）","用户流失率降低 50%","不引入新的技术债"]
+};
+
+const el = document.getElementById('content');
+let html = `<div class="surface-label">❌ 表面描述</div><div class="surface-stmt">${data.surface_statement}</div>`;
+html += `<div class="reframe-label">✅ 重构后</div><div class="reframe-stmt">${data.reframed_statement}</div>`;
+if (data.constraints && data.constraints.length) {
+  html += `<div class="section-label">🔒 约束条件</div><div class="list">${data.constraints.map(c=>`<div class="list-item">${c}</div>`).join('')}</div>`;
+}
+if (data.success_criteria && data.success_criteria.length) {
+  html += `<div class="section-label">🎯 成功标准</div><div class="list">${data.success_criteria.map(c=>`<div class="list-item">${c}</div>`).join('')}</div>`;
+}
+el.innerHTML = html;
+
+function toggleTheme(){const h=document.documentElement;h.dataset.theme=h.dataset.theme==='dark'?'light':'dark'}
+</script>
+</body>
+</html>

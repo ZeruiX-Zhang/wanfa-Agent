@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>鱼骨图分析</title>
+<style>
+:root{--bg:#1a1a2e;--surface:#16213e;--text:#e8e8e8;--accent:#4fc3f7;--warning:#ff9800;--success:#66bb6a;--border:#2a2a4a}
+[data-theme="light"]{--bg:#f8f9fa;--surface:#fff;--text:#1a1a2e;--accent:#0277bd;--warning:#e65100;--success:#2e7d32;--border:#e0e0e0}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);padding:2rem;max-width:900px;margin:0 auto;line-height:1.6}
+h1{font-size:1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:.5rem}
+.effect-box{padding:1rem;background:var(--warning);color:#000;border-radius:8px;font-weight:700;text-align:center;margin-bottom:1.5rem}
+.spine{width:100%;height:3px;background:var(--border);margin-bottom:1.5rem;position:relative}
+.categories{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1rem}
+.category{padding:1rem;background:var(--surface);border-radius:8px;border-top:3px solid var(--accent)}
+.cat-name{font-weight:600;font-size:.85rem;text-transform:uppercase;color:var(--accent);margin-bottom:.5rem}
+.cause{padding:.3rem 0;font-size:.9rem;opacity:.9}
+.cause.primary{font-weight:600;color:var(--warning)}
+.theme-toggle{position:fixed;top:1rem;right:1rem;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.4rem .8rem;cursor:pointer;color:var(--text);font-size:.8rem}
+</style>
+</head>
+<body>
+<button class="theme-toggle" onclick="toggleTheme()">🌓</button>
+<h1>🐟 鱼骨图分析</h1>
+<div class="effect-box" id="effect"></div>
+<div class="spine"></div>
+<div class="categories" id="cats"></div>
+
+<script>
+const data = window.__THINKING_MODEL_DATA__ || {
+  effect:"产品上线延迟 3 周",
+  categories:[
+    {name:"人员 Man",causes:[{text:"前端开发离职",primary:true},{text:"新人上手慢"}]},
+    {name:"机器 Machine",causes:[{text:"CI/CD 管道不稳定"},{text:"测试环境频繁宕机"}]},
+    {name:"材料 Material",causes:[{text:"第三方 API 文档缺失",primary:true},{text:"设计稿多次变更"}]},
+    {name:"方法 Method",causes:[{text:"需求评审不充分"},{text:"缺少里程碑检查点"}]},
+    {name:"环境 Environment",causes:[{text:"跨时区协作延迟"},{text:"节假日中断"}]},
+    {name:"度量 Measurement",causes:[{text:"没有燃尽图追踪"},{text:"延迟发现时已过 deadline"}]}
+  ]
+};
+
+document.getElementById('effect').textContent = '⚡ ' + data.effect;
+const cats = document.getElementById('cats');
+data.categories.forEach(cat => {
+  const causes = cat.causes.map(c => `<div class="cause${c.primary?' primary':''}">${c.primary?'⚠️ ':'• '}${c.text}</div>`).join('');
+  cats.innerHTML += `<div class="category"><div class="cat-name">${cat.name}</div>${causes}</div>`;
+});
+
+function toggleTheme(){const h=document.documentElement;h.dataset.theme=h.dataset.theme==='dark'?'light':'dark'}
+</script>
+</body>
+</html>

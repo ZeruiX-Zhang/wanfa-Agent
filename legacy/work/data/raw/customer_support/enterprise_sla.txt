@@ -1,0 +1,6 @@
+Enterprise customer P1 incidents require a first response within 30 minutes.
+
+For P1 tickets, the support team must acknowledge the issue within 30 minutes, assign an owner, and notify the duty manager if the incident affects production users.
+
+企业客户 P1 问题要求在 30 分钟内首次响应。
+支持团队需要在 30 分钟内确认问题、分配负责人，并在影响生产用户时通知值班经理。

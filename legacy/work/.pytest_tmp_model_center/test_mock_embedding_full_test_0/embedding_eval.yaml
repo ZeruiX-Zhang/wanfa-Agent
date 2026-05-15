@@ -1,0 +1,12 @@
+score_weights:
+  recall_at_5: 0.3
+  mrr_at_10: 0.2
+  ndcg_at_10: 0.2
+  pair_accuracy: 0.1
+  latency_score: 0.1
+  cost_score: 0.1
+targets:
+  latency_ms: 500
+  cost_per_1k_chunks: 0.02
+  storage_mb_per_1k_chunks: 6.0
+default_top_k: 10

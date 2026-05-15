@@ -1,0 +1,50 @@
+{
+  "trace_id": "eba8c53a-399a-476c-bb28-107f26c508bd",
+  "created_at": "2026-05-07T07:58:28.589788+00:00",
+  "selected_domain": "finance_research",
+  "router_latency_ms": 0.001,
+  "dense_latency_ms": 0.724,
+  "bm25_latency_ms": 0.063,
+  "fusion_latency_ms": 0.007,
+  "reranker_latency_ms": 0.038,
+  "llm_latency_ms": 0.203,
+  "total_latency_ms": 1.301,
+  "model": "local-mock",
+  "token_usage": {},
+  "sources": [
+    {
+      "chunk_id": "quarterly_revenue_brief:1",
+      "document_id": "quarterly_revenue_brief",
+      "domain": "finance_research",
+      "tenant_id": "demo",
+      "doc_type": "kb",
+      "access_roles": [
+        "employee",
+        "support",
+        "finance",
+        "ops",
+        "legal",
+        "analyst",
+        "manager"
+      ],
+      "section_path": "2025 Quarterly Revenue Brief",
+      "filename": "quarterly_revenue_brief.md",
+      "page": 1,
+      "score": 0.5782414307004471,
+      "rank": 1,
+      "source": "reranker",
+      "metadata": {
+        "component_ranks": {
+          "dense": 1,
+          "bm25": 1
+        },
+        "representative_source": "bm25",
+        "reranker_provider": "simple",
+        "original_source": "hybrid",
+        "original_score": 0.03278688524590164,
+        "term_overlap": 6
+      },
+      "text": "# 2025 Quarterly Revenue Brief\n\nThe 2025 structured finance dataset shows quarter-over-quarter revenue expansion across East China, North China, and South China.\n\n- 2025Q1 revenue baseline: East China 1.20M, North China 0.98M, South China 1.10M.\n- 2025Q2 revenue: East China 1.45M, North China 1.21M, South China 1.39M.\n- 2025Q3 revenue: East China 1.62M, North China 1.30M, South China 1.70M.\n- Gross margin improves from 0.39-0.42 in Q1 to 0.41-0.46 in Q3.\n- South China posts the strongest Q1-to-Q3 revenue growth, while East China remains the largest revenue base.\n\n2025 年结构化财务样例显示，华东、华北、华南三个区域的营收按季度持续增长。\n华南在 Q1 到 Q3 之间的营收增幅最高，华东保持最大营收体量，毛利率也从 Q1 的 0.39-0.42 提升到 Q3 的 0.41-0.46。"
+    }
+  ]
+}

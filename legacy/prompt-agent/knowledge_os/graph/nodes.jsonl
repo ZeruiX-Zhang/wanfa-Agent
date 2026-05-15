@@ -1,0 +1,4 @@
+{"aliases": ["Prompt Lab"], "id": "prompt_lab", "name": "提示词实验室", "source": "wiki/sources/desktop-workspaces.md", "type": "Workspace"}
+{"aliases": ["Knowledge OS"], "id": "knowledge_os", "name": "知识系统", "source": "wiki/sources/desktop-workspaces.md", "type": "Workspace"}
+{"aliases": ["Settings"], "id": "settings", "name": "设置", "source": "wiki/sources/desktop-workspaces.md", "type": "Workspace"}
+{"aliases": [], "id": "source_a3038c8f-7fed-47d4-8fd6-b3e44e709bcb", "name": "1. 总体架构", "source": "wiki/sources/20260508-050155_1.md", "type": "Source"}

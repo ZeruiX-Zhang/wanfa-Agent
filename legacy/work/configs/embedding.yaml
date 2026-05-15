@@ -1,0 +1,8 @@
+active_model_id: mock_local_128
+provider: mock
+model: mock-local-embedding-128
+dimension: 128
+normalize_embeddings: true
+batch_size: 32
+collection_name: enterprise_kb_demo
+distance_metric: cosine

@@ -1,0 +1,28 @@
+{
+  "doc_id": "doc_4606cf83deb0",
+  "filename": "customer_support_handbook_72c5.md",
+  "elements": [
+    {
+      "block_id": "block_0001",
+      "page": 1,
+      "type": "heading",
+      "text": "# Customer Support Handbook",
+      "section_path": "Customer Support Handbook"
+    },
+    {
+      "block_id": "block_0002",
+      "page": 1,
+      "type": "paragraph",
+      "text": "Enterprise customers with P1 incidents receive an initial response within 30 minutes.\nP1 incidents target workaround or resolution within 8 business hours when the issue is reproducible.",
+      "section_path": "document"
+    },
+    {
+      "block_id": "block_0003",
+      "page": 1,
+      "type": "paragraph",
+      "text": "Refund requests require order validation, entitlement review, and support manager approval.\nSupport agents should never ask customers for passwords, API keys, or one-time codes.",
+      "section_path": "document"
+    }
+  ],
+  "text": "# Customer Support Handbook\n\nEnterprise customers with P1 incidents receive an initial response within 30 minutes.\nP1 incidents target workaround or resolution within 8 business hours when the issue is reproducible.\n\nRefund requests require order validation, entitlement review, and support manager approval.\nSupport agents should never ask customers for passwords, API keys, or one-time codes.\n"
+}

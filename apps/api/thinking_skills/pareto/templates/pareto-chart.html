@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>帕累托分析</title>
+<style>
+:root{--bg:#1a1a2e;--surface:#16213e;--text:#e8e8e8;--accent:#4fc3f7;--warning:#ff9800;--success:#66bb6a;--border:#2a2a4a}
+[data-theme="light"]{--bg:#f8f9fa;--surface:#fff;--text:#1a1a2e;--accent:#0277bd;--warning:#e65100;--success:#2e7d32;--border:#e0e0e0}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);padding:2rem;max-width:800px;margin:0 auto;line-height:1.6}
+h1{font-size:1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:.5rem}
+.chart{position:relative;padding:1rem;background:var(--surface);border-radius:8px;min-height:260px}
+.bars{display:flex;align-items:flex-end;gap:4px;height:200px;padding-top:1rem}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.bar{width:100%;border-radius:4px 4px 0 0;background:var(--accent);position:relative;transition:height .3s}
+.bar.above80{background:var(--border);opacity:.6}
+.bar-label{font-size:.65rem;margin-top:.3rem;text-align:center;word-break:break-all}
+.bar-value{font-size:.6rem;color:var(--accent);margin-bottom:.2rem}
+.threshold{position:absolute;top:40px;left:0;right:0;border-top:2px dashed var(--warning);z-index:1}
+.threshold-label{position:absolute;right:0;top:-16px;font-size:.65rem;color:var(--warning)}
+.summary{margin-top:1.5rem;padding:1rem;background:var(--surface);border-radius:8px;border-left:3px solid var(--warning)}
+.theme-toggle{position:fixed;top:1rem;right:1rem;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.4rem .8rem;cursor:pointer;color:var(--text);font-size:.8rem}
+</style>
+</head>
+<body>
+<button class="theme-toggle" onclick="toggleTheme()">🌓</button>
+<h1>📊 帕累托分析</h1>
+<div class="chart" id="chart"></div>
+<div id="summary"></div>
+
+<script>
+const data = window.__THINKING_MODEL_DATA__ || {
+  title:"客户投诉原因分析",
+  items:[
+    {label:"物流延迟",value:45},{label:"商品损坏",value:25},{label:"描述不符",value:15},
+    {label:"客服态度",value:8},{label:"退款慢",value:5},{label:"其他",value:2}
+  ],
+  insight:"物流延迟和商品损坏占投诉总量 70%，优先解决这两项可覆盖大部分问题"
+};
+
+const total = data.items.reduce((s,i)=>s+i.value,0);
+const maxVal = Math.max(...data.items.map(i=>i.value));
+let cumulative = 0;
+let html = '<div class="bars"><div class="threshold"><span class="threshold-label">80% 线</span></div>';
+data.items.forEach(item => {
+  cumulative += item.value;
+  const pct = (item.value / maxVal * 100).toFixed(0);
+  const above = (cumulative - item.value) / total >= 0.8;
+  html += `<div class="bar-col"><div class="bar-value">${item.value}</div><div class="bar${above?' above80':''}" style="height:${pct}%"></div><div class="bar-label">${item.label}</div></div>`;
+});
+html += '</div>';
+document.getElementById('chart').innerHTML = html;
+if (data.insight) {
+  document.getElementById('summary').innerHTML = `<div class="summary">💡 ${data.insight}</div>`;
+}
+
+function toggleTheme(){const h=document.documentElement;h.dataset.theme=h.dataset.theme==='dark'?'light':'dark'}
+</script>
+</body>
+</html>

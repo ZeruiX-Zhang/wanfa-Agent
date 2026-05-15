@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Enterprise AI Workbench</title>
+  <link rel="stylesheet" href="/static/workbench/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="主导航">
+      <div class="brand">
+        <div class="brand-mark">AI</div>
+        <div>
+          <strong>Enterprise AI Workbench</strong>
+          <span>Demo Ready</span>
+        </div>
+      </div>
+      <nav class="nav-list">
+        <a href="#dashboard" data-route="dashboard" class="active">首页</a>
+        <a href="#rag" data-route="rag">知识库问答</a>
+        <a href="#agent" data-route="agent">QA Workflow Agent</a>
+        <a href="#data" data-route="data">数据分析 Agent</a>
+        <a href="#eval" data-route="eval">效果评估</a>
+        <a href="#trace" data-route="trace">Trace / Debug</a>
+      </nav>
+      <div class="sidebar-footer">
+        <a href="/docs" target="_blank" rel="noreferrer">API 文档</a>
+        <a href="/README.md" target="_blank" rel="noreferrer">README</a>
+        <span id="versionText">v-</span>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1 id="pageTitle">Enterprise AI Workbench</h1>
+          <p id="pageSubtitle">企业知识问答、QA Workflow Agent、数据分析 Agent、评估与可观测性一体化工作台</p>
+        </div>
+        <div class="mode-pill" id="modePill">加载中</div>
+      </header>
+
+      <section id="toast" class="toast hidden" role="status"></section>
+
+      <section id="dashboardPage" class="page active">
+        <div class="intro-band">
+          <div>
+            <h2>Enterprise AI Workbench</h2>
+            <p>展示生产级问答系统的核心链路：RAG、问题拆解、证据验证、审批风控、Trace 和评估。</p>
+          </div>
+          <button class="primary" id="initDemoBtn">初始化演示数据</button>
+        </div>
+
+        <div class="status-grid" id="statusGrid"></div>
+
+        <div class="feature-grid">
+          <article class="feature-card">
+            <span class="badge">RAG</span>
+            <h3>知识库问答</h3>
+            <p>导入企业资料后提问，查看答案、引用、命中文档、检索域和执行耗时。</p>
+            <button data-jump="rag" class="secondary">开始知识库问答</button>
+          </article>
+          <article class="feature-card">
+            <span class="badge">Agent</span>
+            <h3>QA Workflow Agent</h3>
+            <p>展示问题分析、拆解计划、RAG 证据收集、验证结果和高风险动作审批。</p>
+            <button data-jump="agent" class="secondary">运行 Agent 示例</button>
+          </article>
+          <article class="feature-card">
+            <span class="badge">Data</span>
+            <h3>数据分析 Agent</h3>
+            <p>在明确授权的数据分析模式下查询本地 demo 数据库，展示 SQL、表格和图表。</p>
+            <button data-jump="data" class="secondary">分析业务数据</button>
+          </article>
+        </div>
+
+        <div class="quick-panel">
+          <button id="quickRagBtn">体验知识库问答</button>
+          <button id="quickAgentBtn">体验 QA Agent</button>
+          <button id="quickDataBtn">体验数据分析 Agent</button>
+          <button data-jump="eval">查看评估报告</button>
+          <button data-jump="trace">查看最近 Trace</button>
+        </div>
+      </section>
+
+      <section id="ragPage" class="page">
+        <div class="three-column">
+          <aside class="panel">
+            <div class="panel-head">
+              <h2>知识库</h2>
+              <button id="ingestDocsBtn" class="secondary small">导入示例文档</button>
+            </div>
+            <div class="metric-row">
+              <div><strong id="docCount">0</strong><span>文档</span></div>
+              <div><strong id="chunkCount">0</strong><span>Chunks</span></div>
+            </div>
+            <div id="documentList" class="doc-list"></div>
+          </aside>
+
+          <section class="panel chat-panel">
+            <div class="panel-head">
+              <h2>问答</h2>
+              <span class="badge neutral">引用可见</span>
+            </div>
+            <div id="ragExamples" class="example-row"></div>
+            <div id="chatLog" class="chat-log">
+              <div class="assistant-msg">导入示例文档，或点击一个示例问题开始。</div>
+            </div>
+            <div class="input-row">
+              <input id="ragQuestion" placeholder="输入企业知识问题" />
+              <button id="askRagBtn" class="primary">发送</button>
+            </div>
+            <details class="advanced">
+              <summary>高级设置</summary>
+              <div class="settings-grid">
+                <label>top_k <input id="ragTopK" type="number" value="5" min="1" max="20" /></label>
+                <label>检索模式<select id="ragMode"><option>hybrid</option><option>vector</option></select></label>
+                <label><input id="ragRerank" type="checkbox" checked /> rerank</label>
+                <label><input id="ragRewrite" type="checkbox" checked /> query rewrite</label>
+                <label>temperature <input id="ragTemp" type="number" value="0.2" min="0" max="1" step="0.1" /></label>
+                <label>model <input id="ragModel" placeholder="default" /></label>
+              </div>
+            </details>
+          </section>
+
+          <aside class="panel">
+            <div class="panel-head">
+              <h2>证据与调试</h2>
+              <button id="ragTraceBtn" class="secondary small">查看 Trace</button>
+            </div>
+            <div id="ragEvidence" class="evidence-list">等待问答结果。</div>
+          </aside>
+        </div>
+      </section>
+
+      <section id="agentPage" class="page">
+        <div class="split-layout">
+          <section class="panel">
+            <div class="panel-head">
+              <h2>QA Workflow Agent</h2>
+              <select id="agentScenario">
+                <option value="customer_support">客服知识与工单</option>
+                <option value="ops_runbook">运维 Runbook</option>
+                <option value="finance_research">综合业务助手</option>
+              </select>
+            </div>
+            <div id="agentExamples" class="example-row"></div>
+            <textarea id="agentTask" rows="5" placeholder="输入业务问题或任务"></textarea>
+            <div class="button-row">
+              <button id="runAgentBtn" class="primary">运行 Agent</button>
+              <button id="agentTraceBtn" class="secondary">查看执行过程</button>
+            </div>
+            <div id="agentResult" class="result-box">运行后这里会展示答案类型、置信度、最终回答和审批状态。</div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <h2>执行过程 Timeline</h2>
+              <span class="badge neutral">计划与证据可审计</span>
+            </div>
+            <div id="agentTimeline" class="timeline"></div>
+            <div id="confirmationBox" class="confirmation hidden"></div>
+            <h3>工具调用与 QA 审计</h3>
+            <div id="toolCalls" class="tool-call-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="dataPage" class="page">
+        <div class="split-layout">
+          <section class="panel">
+            <div class="panel-head">
+              <h2>数据集状态</h2>
+              <button id="initDbBtn" class="secondary small">初始化 sample database</button>
+            </div>
+            <div id="datasetStatus" class="dataset-status"></div>
+            <div id="dataExamples" class="example-row"></div>
+            <div class="input-row">
+              <input id="dataQuestion" placeholder="输入业务数据问题" />
+              <button id="askDataBtn" class="primary">分析</button>
+            </div>
+            <button id="testSafetyBtn" class="danger">测试危险 SQL 拦截</button>
+          </section>
+
+          <section class="panel wide-panel">
+            <div class="panel-head">
+              <h2>分析结果</h2>
+              <button id="dataTraceBtn" class="secondary small">查看 Trace</button>
+            </div>
+            <div id="dataAnswer" class="result-box">点击示例问题后会显示结论、关键指标、表格、SQL 和图表。</div>
+            <div id="metricCards" class="metric-cards"></div>
+            <div id="chartBox" class="chart-box"></div>
+            <div id="tablePreview" class="table-wrap"></div>
+            <details class="advanced">
+              <summary>查看 SQL 与安全检查</summary>
+              <pre id="sqlBox"></pre>
+              <div id="sqlSafetyBox"></div>
+            </details>
+          </section>
+        </div>
+      </section>
+
+      <section id="evalPage" class="page">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>效果评估</h2>
+            <div class="button-row">
+              <button data-eval="all" class="primary">运行全部评估</button>
+              <button data-eval="rag">只运行 RAG 评估</button>
+              <button data-eval="agent">只运行 Agent 评估</button>
+              <button data-eval="data-agent">只运行 Data Agent 评估</button>
+            </div>
+          </div>
+          <div id="evalMetrics" class="metric-cards"></div>
+          <div class="button-row">
+            <a class="download" href="/api/eval/report?format=json" target="_blank" rel="noreferrer">JSON report</a>
+            <a class="download" href="/api/eval/report?format=markdown" target="_blank" rel="noreferrer">Markdown report</a>
+          </div>
+          <div id="evalTable" class="table-wrap"></div>
+          <div id="failureSamples" class="failure-list"></div>
+        </div>
+      </section>
+
+      <section id="tracePage" class="page">
+        <div class="split-layout">
+          <section class="panel">
+            <div class="panel-head">
+              <h2>最近请求</h2>
+              <button id="refreshTraceBtn" class="secondary small">刷新</button>
+            </div>
+            <div id="traceList" class="trace-list"></div>
+          </section>
+          <section class="panel wide-panel">
+            <div class="panel-head">
+              <h2>Trace 详情</h2>
+              <span class="badge neutral" id="traceType">未选择</span>
+            </div>
+            <div id="traceDetail" class="trace-detail">选择一条 trace 查看执行过程、工具调用、QA 计划、证据报告、SQL、安全检查或错误原因。</div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/static/workbench/app.js"></script>
+</body>
+</html>

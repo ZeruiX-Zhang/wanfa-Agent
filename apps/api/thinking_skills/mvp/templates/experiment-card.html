@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MVP 实验卡</title>
+<style>
+:root{--bg:#1a1a2e;--surface:#16213e;--text:#e8e8e8;--accent:#4fc3f7;--warning:#ff9800;--success:#66bb6a;--border:#2a2a4a}
+[data-theme="light"]{--bg:#f8f9fa;--surface:#fff;--text:#1a1a2e;--accent:#0277bd;--warning:#e65100;--success:#2e7d32;--border:#e0e0e0}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);padding:2rem;max-width:720px;margin:0 auto;line-height:1.6}
+h1{font-size:1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:.5rem}
+.card{background:var(--surface);border-radius:8px;padding:1.5rem;border:1px solid var(--border)}
+.hypothesis{font-size:1.05rem;font-weight:600;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
+.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem}
+.meta-item{padding:.75rem;background:var(--bg);border-radius:6px}
+.meta-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--accent);margin-bottom:.25rem}
+.meta-value{font-size:.9rem}
+.paths{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem}
+.path{padding:.75rem;border-radius:6px}
+.path.success{background:rgba(102,187,106,.15);border:1px solid var(--success)}
+.path.failure{background:rgba(255,152,0,.1);border:1px solid var(--warning)}
+.path-label{font-size:.7rem;text-transform:uppercase;font-weight:600;margin-bottom:.25rem}
+.path.success .path-label{color:var(--success)}
+.path.failure .path-label{color:var(--warning)}
+.theme-toggle{position:fixed;top:1rem;right:1rem;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.4rem .8rem;cursor:pointer;color:var(--text);font-size:.8rem}
+</style>
+</head>
+<body>
+<button class="theme-toggle" onclick="toggleTheme()">🌓</button>
+<h1>🧪 MVP 实验卡</h1>
+<div class="card" id="card"></div>
+
+<script>
+const data = window.__THINKING_MODEL_DATA__ || {
+  hypothesis:"如果我们在结账页添加「一键微信支付」，移动端转化率将提升 15%",
+  metric:"移动端结账转化率（当前 32%）",
+  timeline:"5 个工作日",
+  cost:"开发 3 人天 + 微信支付接口费 ¥0",
+  success_path:"转化率 ≥ 37% → 全量上线并优化支付体验",
+  failure_path:"转化率 < 35% → 访谈 10 位流失用户，重新定位阻力点"
+};
+
+const card = document.getElementById('card');
+card.innerHTML = `
+  <div class="hypothesis">💡 ${data.hypothesis}</div>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="meta-label">核心指标</div><div class="meta-value">${data.metric}</div></div>
+    <div class="meta-item"><div class="meta-label">时间窗口</div><div class="meta-value">${data.timeline}</div></div>
+    <div class="meta-item"><div class="meta-label">投入成本</div><div class="meta-value">${data.cost}</div></div>
+    <div class="meta-item"><div class="meta-label">实验类型</div><div class="meta-value">A/B 测试</div></div>
+  </div>
+  <div class="paths">
+    <div class="path success"><div class="path-label">✅ 成功路径</div>${data.success_path}</div>
+    <div class="path failure"><div class="path-label">❌ 失败路径</div>${data.failure_path}</div>
+  </div>`;
+
+function toggleTheme(){const h=document.documentElement;h.dataset.theme=h.dataset.theme==='dark'?'light':'dark'}
+</script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+{
+  "trace_id": "17db8790-11a0-4240-9387-12ac10e5f350",
+  "created_at": "2026-05-07T04:00:19.653627+00:00",
+  "selected_domain": "customer_support",
+  "router_latency_ms": 0.019,
+  "dense_latency_ms": 0.464,
+  "bm25_latency_ms": 0.097,
+  "fusion_latency_ms": 0.013,
+  "reranker_latency_ms": 0.027,
+  "llm_latency_ms": 0.017,
+  "total_latency_ms": 0.723,
+  "model": "local-mock",
+  "token_usage": {},
+  "sources": [
+    {
+      "chunk_id": "enterprise_sla:1",
+      "document_id": "enterprise_sla",
+      "domain": "customer_support",
+      "tenant_id": "demo",
+      "doc_type": "kb",
+      "access_roles": [
+        "employee",
+        "support",
+        "finance",
+        "ops",
+        "legal",
+        "analyst",
+        "manager"
+      ],
+      "section_path": "paragraph-1",
+      "filename": "enterprise_sla.txt",
+      "page": 1,
+      "score": 0.15778688524590165,
+      "rank": 1,
+      "source": "reranker",
+      "metadata": {
+        "component_ranks": {
+          "dense": 1,
+          "bm25": 1
+        },
+        "representative_source": "bm25",
+        "reranker_provider": "simple",
+        "original_source": "hybrid",
+        "original_score": 0.03278688524590164,
+        "term_overlap": 1
+      },
+      "text": "企业客户 P1 SLA 响应时间为 30 分钟。"
+    },
+    {
+      "chunk_id": "enterprise_sla:2",
+      "document_id": "enterprise_sla",
+      "domain": "customer_support",
+      "tenant_id": "demo",
+      "doc_type": "kb",
+      "access_roles": [
+        "employee",
+        "support",
+        "finance",
+        "ops",
+        "legal",
+        "analyst",
+        "manager"
+      ],
+      "section_path": "paragraph-2",
+      "filename": "enterprise_sla.txt",
+      "page": 2,
+      "score": 0.15725806451612903,
+      "rank": 2,
+      "source": "reranker",
+      "metadata": {
+        "component_ranks": {
+          "dense": 2,
+          "bm25": 2
+        },
+        "representative_source": "bm25",
+        "reranker_provider": "simple",
+        "original_source": "hybrid",
+        "original_score": 0.03225806451612903,
+        "term_overlap": 1
+      },
+      "text": "当企业客户提交 P1 工单时，支持团队必须在 30 分钟内完成首次响应，并同步值班经理跟进升级。"
+    }
+  ]
+}

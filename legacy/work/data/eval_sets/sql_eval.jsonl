@@ -1,0 +1,10 @@
+{"question":"Show the 2025 quarterly revenue trend.","expected_sql_pattern":"FROM orders","expected_result_hint":"total_revenue"}
+{"question":"Which region has the fastest revenue growth?","expected_sql_pattern":"GROUP BY region","expected_result_hint":"growth_rate"}
+{"question":"Which channel has the lowest conversion rate?","expected_sql_pattern":"FROM marketing_spend","expected_result_hint":"conversion_rate"}
+{"question":"Rank product lines by gross margin.","expected_sql_pattern":"GROUP BY product_line","expected_result_hint":"gross_margin"}
+{"question":"What is the average P1 ticket resolution time?","expected_sql_pattern":"FROM tickets","expected_result_hint":"P1"}
+{"question":"Which support category has the lowest satisfaction?","expected_sql_pattern":"satisfaction_score","expected_result_hint":"avg_satisfaction"}
+{"question":"Rank industries by total revenue.","expected_sql_pattern":"JOIN customers","expected_result_hint":"industry"}
+{"question":"Which marketing channel has the best ROI?","expected_sql_pattern":"FROM marketing_spend","expected_result_hint":"roi"}
+{"question":"How many new customers were created in the latest month by region?","expected_sql_pattern":"FROM customers","expected_result_hint":"new_customers"}
+{"question":"Show recent orders.","expected_sql_pattern":"FROM orders","expected_result_hint":"order_date"}

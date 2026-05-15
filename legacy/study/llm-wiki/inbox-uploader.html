@@ -1,0 +1,1125 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Inbox · 资料导入</title>
+<style>
+  /* ============ 设计令牌 ============ */
+  :root {
+    --bg-0: #08070a;
+    --bg-1: #0f0d12;
+    --bg-2: #15121a;
+    --bg-3: #1c1822;
+    --line: rgba(255, 215, 160, 0.08);
+    --line-strong: rgba(255, 215, 160, 0.18);
+    --text: #ece7df;
+    --text-2: #b8b1a4;
+    --text-3: #7d7668;
+    --gold: #d4af6a;
+    --gold-soft: #b89556;
+    --gold-deep: #8a6c3a;
+    --gold-glow: rgba(212, 175, 106, 0.35);
+    --danger: #c46a5a;
+    --ok: #7fa980;
+    --warn: #d6a85e;
+    --radius-lg: 18px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+    --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.03) inset,
+                   0 30px 80px -40px rgba(0, 0, 0, 0.9),
+                   0 12px 30px -20px rgba(0, 0, 0, 0.7);
+    --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC",
+                 "Microsoft YaHei", "Hiragino Sans GB", "Segoe UI", sans-serif;
+    --font-mono: ui-monospace, "JetBrains Mono", "SF Mono", Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-sans);
+    color: var(--text);
+    background: radial-gradient(1200px 800px at 20% -10%, #181321 0%, var(--bg-0) 60%) fixed,
+                radial-gradient(900px 600px at 90% 110%, #1a1320 0%, var(--bg-0) 60%) fixed,
+                var(--bg-0);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: 0.01em;
+  }
+
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    pointer-events: none;
+    background:
+      repeating-linear-gradient(135deg,
+        rgba(255, 255, 255, 0.012) 0 1px,
+        transparent 1px 3px),
+      radial-gradient(600px 300px at 50% 0%, rgba(212, 175, 106, 0.06), transparent 70%);
+    mix-blend-mode: screen;
+  }
+
+  .wrap {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 56px 28px 120px;
+    position: relative;
+  }
+
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .brand { display: flex; align-items: baseline; gap: 14px; }
+  .brand .logo {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #f5dfa8, var(--gold) 50%, var(--gold-deep) 100%);
+    box-shadow: 0 0 24px var(--gold-glow);
+    align-self: center;
+  }
+  .brand h1 {
+    font-size: 22px; font-weight: 500; margin: 0;
+    letter-spacing: 0.04em;
+  }
+  .brand .sub { color: var(--text-3); font-size: 13px; margin-left: 4px; }
+
+  /* ============ 连接状态条 ============ */
+  .conn-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 14px;
+    padding: 14px 18px;
+    margin-bottom: 24px;
+    background: linear-gradient(180deg, rgba(28,24,34,.7), rgba(20,17,26,.7));
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    flex-wrap: wrap;
+  }
+  .conn-info { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
+  .conn-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    box-shadow: 0 0 8px currentColor;
+  }
+  .conn-dot.connected { background: var(--ok); color: var(--ok); }
+  .conn-dot.disconnected { background: var(--warn); color: var(--warn); }
+  .conn-dot.unsupported { background: var(--danger); color: var(--danger); }
+  .conn-text { font-size: 13px; color: var(--text-2); min-width: 0; }
+  .conn-text strong { color: var(--text); font-weight: 500; }
+  .conn-text .path-mono {
+    font-family: var(--font-mono); font-size: 11.5px; color: var(--gold);
+    word-break: break-all;
+  }
+
+  /* ============ Tab ============ */
+  .tabs {
+    display: flex; gap: 4px;
+    padding: 4px;
+    background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    margin-bottom: 24px;
+    width: fit-content;
+  }
+  .tab {
+    appearance: none; border: 0; cursor: pointer;
+    background: transparent; color: var(--text-2);
+    padding: 10px 22px;
+    font-size: 13px; letter-spacing: 0.05em;
+    border-radius: 999px;
+    font-family: inherit;
+    transition: color .2s, background .25s;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active {
+    color: var(--bg-0);
+    background: linear-gradient(180deg, #ecd49b, var(--gold) 60%, var(--gold-soft));
+    box-shadow: 0 6px 16px -8px var(--gold-glow), 0 0 0 1px var(--gold-deep) inset;
+    font-weight: 600;
+  }
+
+  /* ============ 卡片 ============ */
+  .card {
+    background: linear-gradient(180deg, rgba(28, 24, 34, 0.7), rgba(20, 17, 26, 0.7));
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: var(--shadow-card);
+    padding: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(400px 200px at 0% 0%, rgba(212, 175, 106, 0.08), transparent 60%);
+    pointer-events: none;
+  }
+  .card h2 {
+    margin: 0 0 4px; font-size: 16px; font-weight: 500;
+    letter-spacing: 0.05em; color: var(--text);
+  }
+  .card .hint {
+    color: var(--text-3); font-size: 12.5px; margin-bottom: 18px; line-height: 1.6;
+  }
+
+  /* ============ 表单 ============ */
+  textarea, input[type="text"] {
+    width: 100%;
+    background: rgba(8, 6, 11, 0.55);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    font-size: 14px; line-height: 1.6;
+    font-family: inherit;
+    resize: vertical;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  textarea {
+    min-height: 220px;
+    font-family: var(--font-mono);
+    font-size: 13.5px;
+  }
+  textarea:focus, input[type="text"]:focus {
+    border-color: var(--gold-soft);
+    box-shadow: 0 0 0 4px rgba(212, 175, 106, 0.08);
+  }
+  textarea::placeholder, input::placeholder { color: var(--text-3); }
+
+  .row { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; margin-top: 14px; }
+  @media (max-width: 640px) { .row { grid-template-columns: 1fr; } }
+
+  label.field { display: flex; flex-direction: column; gap: 6px; }
+  label.field span {
+    font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  .seg {
+    display: inline-flex; gap: 4px; padding: 4px;
+    background: rgba(8, 6, 11, 0.55);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    flex-wrap: wrap;
+  }
+  .seg-btn {
+    appearance: none; border: 0; cursor: pointer;
+    background: transparent; color: var(--text-2);
+    padding: 8px 14px; font-size: 12.5px; letter-spacing: 0.04em;
+    border-radius: 8px;
+    font-family: inherit;
+    transition: background .2s, color .2s;
+  }
+  .seg-btn:hover { color: var(--text); }
+  .seg-btn.active {
+    color: var(--gold);
+    background: rgba(212, 175, 106, 0.08);
+    box-shadow: 0 0 0 1px rgba(212, 175, 106, 0.18) inset;
+  }
+
+  .actions {
+    display: flex; align-items: center; gap: 12px;
+    margin-top: 22px; flex-wrap: wrap;
+  }
+  .btn {
+    appearance: none; cursor: pointer; font-family: inherit;
+    border: 1px solid var(--line-strong);
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--text);
+    padding: 12px 22px;
+    border-radius: var(--radius-md);
+    font-size: 13.5px; letter-spacing: 0.04em;
+    transition: background .2s, border-color .2s, transform .1s;
+  }
+  .btn:hover { background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 215, 160, 0.3); }
+  .btn:active { transform: translateY(1px); }
+  .btn.primary {
+    background: linear-gradient(180deg, #f0d6a0, var(--gold) 55%, var(--gold-soft));
+    color: #1a1208;
+    border-color: var(--gold-deep);
+    font-weight: 600;
+    box-shadow: 0 10px 24px -16px var(--gold-glow), 0 0 0 1px rgba(255, 240, 210, 0.2) inset;
+  }
+  .btn.primary:hover { filter: brightness(1.04); }
+  .btn.primary:disabled {
+    opacity: 0.45; cursor: not-allowed; filter: grayscale(0.3);
+  }
+  .btn.ghost { color: var(--text-3); border-color: var(--line); }
+  .btn.tiny { padding: 6px 14px; font-size: 12px; }
+
+  .kbd {
+    display: inline-block; padding: 1px 6px; border-radius: 4px;
+    background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line-strong);
+    font-family: var(--font-mono); font-size: 11px; color: var(--text-2);
+  }
+
+  .drop {
+    border: 1px dashed var(--line-strong);
+    border-radius: var(--radius-md);
+    padding: 44px 20px;
+    text-align: center; color: var(--text-2);
+    background: rgba(8, 6, 11, 0.35);
+    transition: border-color .2s, background .2s;
+    cursor: pointer;
+  }
+  .drop:hover { border-color: var(--gold-soft); background: rgba(212, 175, 106, 0.04); }
+  .drop.dragover {
+    border-color: var(--gold);
+    background: rgba(212, 175, 106, 0.08);
+    box-shadow: 0 0 0 4px rgba(212, 175, 106, 0.06);
+  }
+  .drop strong { color: var(--text); font-weight: 500; }
+  .drop .icon {
+    width: 28px; height: 28px; margin-bottom: 10px;
+    display: inline-block;
+    background: radial-gradient(circle at 30% 30%, #f5dfa8, var(--gold-deep));
+    border-radius: 6px;
+    transform: rotate(45deg);
+    box-shadow: 0 6px 16px -8px var(--gold-glow);
+  }
+
+  ul.file-list {
+    list-style: none; padding: 0; margin: 16px 0 0;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  ul.file-list li {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    background: rgba(8, 6, 11, 0.55);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px; font-size: 13px;
+  }
+  ul.file-list .meta { color: var(--text-3); font-family: var(--font-mono); font-size: 11.5px; }
+  ul.file-list .target { color: var(--gold); font-family: var(--font-mono); font-size: 11.5px; }
+  ul.file-list .rm {
+    cursor: pointer; color: var(--text-3); border: 0; background: transparent;
+    font-size: 14px; padding: 0 4px;
+  }
+  ul.file-list .rm:hover { color: var(--danger); }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 36px; transform: translateX(-50%) translateY(20px);
+    background: linear-gradient(180deg, #2a2230, #1a1620);
+    border: 1px solid var(--gold-deep);
+    color: var(--text);
+    padding: 12px 22px; border-radius: 999px;
+    font-size: 13px; letter-spacing: 0.04em;
+    box-shadow: 0 18px 40px -20px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(212, 175, 106, 0.15) inset;
+    opacity: 0; pointer-events: none;
+    transition: opacity .25s, transform .25s;
+    z-index: 100;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+
+  .footnote {
+    margin-top: 32px; color: var(--text-3); font-size: 12px; line-height: 1.7;
+  }
+  .footnote code {
+    font-family: var(--font-mono); color: var(--gold);
+    background: rgba(212, 175, 106, 0.06); padding: 1px 6px; border-radius: 4px;
+  }
+  .footnote a { color: var(--gold); text-decoration: none; }
+  .footnote a:hover { text-decoration: underline; }
+
+  .path {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 6px;
+    font-family: var(--font-mono); font-size: 11.5px;
+    color: var(--gold);
+    background: rgba(212, 175, 106, 0.06);
+    border: 1px solid rgba(212, 175, 106, 0.18);
+  }
+
+  .panel { display: none; }
+  .panel.active { display: block; animation: fade .25s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  /* 不支持 API 时的全屏遮罩(可关) */
+  .banner-warn {
+    background: linear-gradient(180deg, rgba(214, 168, 94, 0.12), rgba(214, 168, 94, 0.04));
+    border: 1px solid rgba(214, 168, 94, 0.3);
+    color: var(--text);
+    padding: 14px 18px;
+    border-radius: var(--radius-md);
+    margin-bottom: 16px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .banner-warn b { color: var(--warn); }
+
+  .mode-tag {
+    display: inline-block;
+    padding: 2px 8px; border-radius: 999px;
+    font-size: 10.5px; letter-spacing: 0.08em;
+    border: 1px solid var(--line-strong);
+    color: var(--text-3);
+    text-transform: uppercase;
+  }
+  .mode-tag.live {
+    color: var(--gold); border-color: var(--gold-soft);
+    background: rgba(212, 175, 106, 0.06);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="logo" aria-hidden="true"></div>
+      <div>
+        <h1>Inbox · 资料导入</h1>
+        <div class="sub">把它丢进去,Claude 会整理。</div>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <span class="mode-tag" id="modeTag">DOWNLOAD</span>
+      <span style="color: var(--text-3); font-size: 12px; font-family: var(--font-mono);" id="dateBadge"></span>
+    </div>
+  </header>
+
+  <!-- 连接状态条 -->
+  <div class="conn-bar" id="connBar">
+    <div class="conn-info">
+      <span class="conn-dot disconnected" id="connDot"></span>
+      <div class="conn-text" id="connText">
+        <strong>未连接到 inbox 文件夹。</strong>
+        点右侧 → 选择 <span class="path-mono">raw/inbox/</span> 文件夹,以后保存就直接落盘。
+      </div>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn primary tiny" id="connectBtn">连接 inbox 文件夹</button>
+      <button class="btn ghost tiny" id="disconnectBtn" style="display:none;">断开</button>
+    </div>
+  </div>
+
+  <div class="banner-warn" id="unsupportedBanner" style="display:none;">
+    <b>当前浏览器不支持直接写盘 API。</b>
+    建议使用 <strong>Chrome</strong> 或 <strong>Edge</strong> 打开本页面。<br>
+    现在仍可用,但保存时只能下载到系统下载目录,需要你手动拖到 <span class="path">raw/inbox/</span>。
+  </div>
+
+  <div class="tabs" role="tablist" aria-label="导入类型">
+    <button class="tab active" data-tab="text" role="tab">文字</button>
+    <button class="tab" data-tab="url" role="tab">链接</button>
+    <button class="tab" data-tab="file" role="tab">文件</button>
+  </div>
+
+  <!-- ====== 文字面板 ====== -->
+  <section class="panel active card" id="panel-text">
+    <h2>文字 / 笔记 / 摘录 / 灵感</h2>
+    <p class="hint">
+      不知道选哪类?默认 <strong>笔记</strong> 即可,Claude 后续会自动归档。
+      已连接时点保存 → 文件直接出现在 <span class="path">raw/inbox/</span>(笔记/摘录/灵感都进 inbox 根目录,Claude 处理时拆分)。
+    </p>
+
+    <div class="seg" id="textKindSeg" role="tablist">
+      <button class="seg-btn active" data-kind="notes">📝 笔记 (notes)</button>
+      <button class="seg-btn" data-kind="clippings">💎 摘录 (clippings)</button>
+      <button class="seg-btn" data-kind="ideas">💡 灵感 (ideas)</button>
+    </div>
+
+    <div class="row">
+      <label class="field">
+        <span>标题(可选)</span>
+        <input type="text" id="textTitle" placeholder="留空将由 Claude 自动起名" autocomplete="off" />
+      </label>
+      <label class="field">
+        <span>来源(摘录时建议填,溯源用)</span>
+        <input type="text" id="textSource" placeholder="例:某书第 3 章 / Karpathy Twitter" autocomplete="off" />
+      </label>
+    </div>
+
+    <div style="margin-top: 14px;">
+      <label class="field">
+        <span>正文</span>
+        <textarea id="textBody" placeholder="在这里写或粘贴。多条用 --- 分隔。&#10;&#10;按 Ctrl/⌘+Enter 直接保存。"></textarea>
+      </label>
+    </div>
+
+    <div class="actions">
+      <button class="btn primary" id="textSaveBtn">保存到 inbox</button>
+      <button class="btn ghost" id="textClearBtn">清空</button>
+      <span style="color: var(--text-3); font-size: 12px;">
+        快捷键 <span class="kbd">Ctrl/⌘</span> + <span class="kbd">Enter</span>
+      </span>
+    </div>
+  </section>
+
+  <!-- ====== 链接面板 ====== -->
+  <section class="panel card" id="panel-url">
+    <h2>链接(网页 / 论文 / 视频)</h2>
+    <p class="hint">
+      一行一个链接,可在链接后用空格加备注。已连接时,点保存会**追加**到
+      <span class="path">raw/inbox/urls.md</span> 的"待处理"区,不会覆盖你已有的内容。
+    </p>
+
+    <label class="field">
+      <span>链接列表</span>
+      <textarea id="urlBody" placeholder="https://arxiv.org/abs/2005.11401  论文:RAG 原典&#10;https://lilianweng.github.io/posts/2023-06-23-agent/&#10;https://www.youtube.com/watch?v=...  视频:某讲座"></textarea>
+    </label>
+
+    <div class="actions">
+      <button class="btn primary" id="urlAppendBtn">追加到 urls.md</button>
+      <button class="btn" id="urlCopyBtn">复制到剪贴板</button>
+      <button class="btn ghost" id="urlClearBtn">清空</button>
+    </div>
+  </section>
+
+  <!-- ====== 文件面板 ====== -->
+  <section class="panel card" id="panel-file">
+    <h2>文件(PDF / MD / TXT / 图片 等)</h2>
+    <p class="hint">
+      拖文件到下方虚框,或点击选择。已连接时点"保存全部"会按后缀自动写入对应子目录:
+      PDF→<code>pdfs/</code>、图片→<code>images/</code>、字幕→<code>videos/</code>、文档→<code>web/</code>、其他→<code>misc/</code>。
+    </p>
+
+    <div class="drop" id="drop">
+      <div class="icon" aria-hidden="true"></div>
+      <div><strong>拖文件到这里</strong> 或 点击选择</div>
+      <div style="font-size:12px; color: var(--text-3); margin-top:6px;">
+        命名会自动加上 <code>YYYY-MM-DD-</code> 前缀,避免重名
+      </div>
+      <input type="file" id="fileInput" multiple style="display:none" />
+    </div>
+
+    <ul class="file-list" id="fileList"></ul>
+
+    <div class="actions">
+      <button class="btn primary" id="filesSaveBtn">保存全部到 inbox</button>
+      <button class="btn ghost" id="filesClearBtn">清空</button>
+    </div>
+  </section>
+
+  <div class="footnote">
+    <p>
+      <strong>已连接模式</strong>:点保存 → 文件直接落到 <code>raw/inbox/</code> → 回到 Claude 说"处理 inbox"。无需手动拖文件。
+    </p>
+    <p>
+      <strong>降级模式</strong>(浏览器不支持或你没连接时):点保存会下载到系统 <code>下载/Downloads</code>,需要你手动拖入 inbox。
+    </p>
+    <p>
+      草稿自动保存到 localStorage。重新打开浏览器后,你已授权过的文件夹仍保留在记忆中,只需点一次"重新连接"即可恢复(浏览器安全规定每个会话需要再次确认一次)。
+    </p>
+  </div>
+</div>
+
+<div class="toast" id="toast">已保存</div>
+
+<script>
+(() => {
+  // ============ 工具 ============
+  const $ = (sel) => document.querySelector(sel);
+  const $$ = (sel) => document.querySelectorAll(sel);
+  const pad = (n) => String(n).padStart(2, "0");
+  const now = () => {
+    const d = new Date();
+    return {
+      date: `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`,
+      time: `${pad(d.getHours())}${pad(d.getMinutes())}`,
+      iso: d.toISOString(),
+    };
+  };
+  const slugify = (s, fallback="untitled") => {
+    if (!s) return fallback;
+    let out = s.trim()
+      .replace(/[\\/:*?"<>|]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    out = out.slice(0, 60);
+    return out || fallback;
+  };
+  const downloadBlob = (blob, filename) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
+  };
+  const downloadText = (text, filename) =>
+    downloadBlob(new Blob([text], { type: "text/markdown;charset=utf-8" }), filename);
+
+  let toastTimer;
+  const toast = (msg, ok=true) => {
+    const t = $("#toast");
+    t.textContent = msg;
+    t.style.borderColor = ok ? "var(--gold-deep)" : "var(--danger)";
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
+  };
+
+  (() => {
+    const n = now();
+    $("#dateBadge").textContent = `${n.date} · ${n.time.slice(0,2)}:${n.time.slice(2)}`;
+  })();
+
+  // ============ File System Access 状态机 ============
+  const HAS_FS = typeof window.showDirectoryPicker === "function";
+  let inboxHandle = null;          // FileSystemDirectoryHandle
+  let subdirHandles = {};          // 缓存子目录句柄
+
+  // IndexedDB 持久化句柄,使浏览器关闭后仍能复用(只需用户再点一次确认)
+  const DB_NAME = "llm-wiki-uploader";
+  const DB_STORE = "handles";
+  const idb = {
+    open() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, 1);
+        req.onupgradeneeded = () => req.result.createObjectStore(DB_STORE);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    },
+    async put(key, val) {
+      const db = await this.open();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(DB_STORE, "readwrite");
+        tx.objectStore(DB_STORE).put(val, key);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    },
+    async get(key) {
+      const db = await this.open();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(DB_STORE, "readonly");
+        const r = tx.objectStore(DB_STORE).get(key);
+        r.onsuccess = () => resolve(r.result);
+        r.onerror = () => reject(r.error);
+      });
+    },
+    async del(key) {
+      const db = await this.open();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(DB_STORE, "readwrite");
+        tx.objectStore(DB_STORE).delete(key);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    },
+  };
+
+  const updateConnUI = () => {
+    const dot = $("#connDot");
+    const txt = $("#connText");
+    const tag = $("#modeTag");
+    const connectBtn = $("#connectBtn");
+    const disconnectBtn = $("#disconnectBtn");
+
+    if (!HAS_FS) {
+      dot.className = "conn-dot unsupported";
+      txt.innerHTML = `<strong>当前浏览器不支持直写盘。</strong> 保存会回退到下载,然后你手动拖入 inbox。`;
+      tag.textContent = "DOWNLOAD";
+      tag.classList.remove("live");
+      connectBtn.style.display = "none";
+      disconnectBtn.style.display = "none";
+      $("#unsupportedBanner").style.display = "block";
+      return;
+    }
+
+    if (inboxHandle) {
+      dot.className = "conn-dot connected";
+      txt.innerHTML = `<strong>已连接 inbox。</strong> 文件夹: <span class="path-mono">${inboxHandle.name}</span> · 保存即落盘。`;
+      tag.textContent = "LIVE";
+      tag.classList.add("live");
+      connectBtn.textContent = "重新选择文件夹";
+      connectBtn.style.display = "inline-block";
+      disconnectBtn.style.display = "inline-block";
+    } else {
+      dot.className = "conn-dot disconnected";
+      txt.innerHTML = `<strong>未连接 inbox 文件夹。</strong> 点右侧 → 选 <span class="path-mono">raw/inbox/</span>,之后保存就直接落盘。`;
+      tag.textContent = "DOWNLOAD";
+      tag.classList.remove("live");
+      connectBtn.textContent = "连接 inbox 文件夹";
+      connectBtn.style.display = "inline-block";
+      disconnectBtn.style.display = "none";
+    }
+  };
+
+  const verifyPermission = async (handle, mode = "readwrite") => {
+    if (!handle) return false;
+    const opts = { mode };
+    if ((await handle.queryPermission(opts)) === "granted") return true;
+    if ((await handle.requestPermission(opts)) === "granted") return true;
+    return false;
+  };
+
+  const getSubdir = async (name) => {
+    if (!inboxHandle) return null;
+    if (subdirHandles[name]) return subdirHandles[name];
+    const h = await inboxHandle.getDirectoryHandle(name, { create: true });
+    subdirHandles[name] = h;
+    return h;
+  };
+
+  const writeFileToHandle = async (dirHandle, filename, dataOrBlob) => {
+    const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(dataOrBlob);
+    await writable.close();
+  };
+
+  // 追加(读 → 拼 → 整体写回)
+  const appendToFile = async (dirHandle, filename, appendText, ifMissingInitial = "") => {
+    let fileHandle, existing = ifMissingInitial;
+    try {
+      fileHandle = await dirHandle.getFileHandle(filename, { create: false });
+      const f = await fileHandle.getFile();
+      existing = await f.text();
+    } catch {
+      fileHandle = await dirHandle.getFileHandle(filename, { create: true });
+    }
+    const newContent = existing.endsWith("\n") || existing === ""
+      ? existing + appendText
+      : existing + "\n" + appendText;
+    const writable = await fileHandle.createWritable();
+    await writable.write(newContent);
+    await writable.close();
+  };
+
+  // 启动时尝试恢复句柄
+  const tryRestoreHandle = async () => {
+    if (!HAS_FS) { updateConnUI(); return; }
+    try {
+      const saved = await idb.get("inboxHandle");
+      if (saved) {
+        // 不能在没有用户手势时强行 requestPermission,这里只查询
+        const opts = { mode: "readwrite" };
+        const status = await saved.queryPermission(opts);
+        if (status === "granted") {
+          inboxHandle = saved;
+        } else {
+          // 状态条提示用户点一下
+          $("#connText").innerHTML =
+            `<strong>检测到上次连接过的文件夹。</strong> 点 "重新连接" 即可恢复(浏览器安全规则要求每会话授权一次)。`;
+          $("#connectBtn").textContent = "重新连接 inbox";
+          // 缓存待恢复的句柄到全局,点一下即可触发 requestPermission
+          window.__pendingHandle = saved;
+        }
+      }
+    } catch {}
+    updateConnUI();
+  };
+
+  $("#connectBtn").addEventListener("click", async () => {
+    if (!HAS_FS) { toast("浏览器不支持,建议使用 Chrome/Edge", false); return; }
+    try {
+      // 优先尝试用上次保存的句柄(免再次选择)
+      let handle = window.__pendingHandle;
+      if (handle) {
+        if (await verifyPermission(handle)) {
+          inboxHandle = handle;
+          window.__pendingHandle = null;
+          subdirHandles = {};
+          updateConnUI();
+          toast(`已重连到 ${inboxHandle.name}`);
+          return;
+        }
+      }
+      // 否则弹文件夹选择器
+      handle = await window.showDirectoryPicker({
+        id: "llm-wiki-inbox",
+        mode: "readwrite",
+        startIn: "documents",
+      });
+      if (!(await verifyPermission(handle))) {
+        toast("未授予写权限", false);
+        return;
+      }
+      // 检查这个文件夹是不是 inbox(看里面是否有 urls.md / notes.md 之一)
+      let looksLikeInbox = false;
+      for await (const [name, _] of handle.entries()) {
+        if (["urls.md", "notes.md", "clippings.md", "ideas.md"].includes(name)) {
+          looksLikeInbox = true; break;
+        }
+      }
+      if (!looksLikeInbox) {
+        const ok = confirm(
+          `已选择文件夹「${handle.name}」,但里面没看到 urls.md / notes.md 等文件。\n\n` +
+          `请确认这是 raw/inbox/ 文件夹本身,而不是它的父目录或子目录。\n\n` +
+          `继续使用此文件夹吗?`
+        );
+        if (!ok) return;
+      }
+      inboxHandle = handle;
+      subdirHandles = {};
+      await idb.put("inboxHandle", handle);
+      updateConnUI();
+      toast(`已连接 ${handle.name},以后保存直接落盘`);
+    } catch (err) {
+      if (err.name !== "AbortError") {
+        toast("连接失败:" + err.message, false);
+      }
+    }
+  });
+
+  $("#disconnectBtn").addEventListener("click", async () => {
+    if (!confirm("断开当前 inbox 连接?草稿不受影响。")) return;
+    inboxHandle = null;
+    subdirHandles = {};
+    await idb.del("inboxHandle");
+    updateConnUI();
+    toast("已断开");
+  });
+
+  // ============ Tab ============
+  $$(".tabs .tab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      $$(".tabs .tab").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      const target = btn.dataset.tab;
+      $$(".panel").forEach(p => p.classList.remove("active"));
+      $(`#panel-${target}`).classList.add("active");
+    });
+  });
+
+  // ============ 草稿 ============
+  let textKind = "notes";
+  $$("#textKindSeg .seg-btn").forEach(b => {
+    b.addEventListener("click", () => {
+      $$("#textKindSeg .seg-btn").forEach(x => x.classList.remove("active"));
+      b.classList.add("active");
+      textKind = b.dataset.kind;
+      saveDraft();
+    });
+  });
+  const textTitle = $("#textTitle");
+  const textSource = $("#textSource");
+  const textBody = $("#textBody");
+  const DRAFT_KEY = "llm-wiki-uploader-draft-v2";
+  const loadDraft = () => {
+    try {
+      const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}");
+      if (d.kind) {
+        textKind = d.kind;
+        $$("#textKindSeg .seg-btn").forEach(x => {
+          x.classList.toggle("active", x.dataset.kind === d.kind);
+        });
+      }
+      if (d.title) textTitle.value = d.title;
+      if (d.source) textSource.value = d.source;
+      if (d.body) textBody.value = d.body;
+      if (d.urls) $("#urlBody").value = d.urls;
+    } catch {}
+  };
+  const saveDraft = () => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({
+      kind: textKind,
+      title: textTitle.value,
+      source: textSource.value,
+      body: textBody.value,
+      urls: $("#urlBody").value,
+    }));
+  };
+  [textTitle, textSource, textBody, $("#urlBody")].forEach(el => {
+    el.addEventListener("input", saveDraft);
+  });
+
+  // ============ 文字 → MD ============
+  const buildMarkdown = () => {
+    const n = now();
+    const kind = textKind;
+    const title = textTitle.value.trim();
+    const source = textSource.value.trim();
+    const body = textBody.value.trim();
+    if (!body) return null;
+
+    const tagsMap = {
+      notes: ["note", "draft"],
+      clippings: ["clipping", "draft"],
+      ideas: ["idea", "draft"],
+    };
+    const slug = slugify(title || body.split(/\r?\n/)[0], `${kind}-untitled`);
+    const filename = `${n.date}-${n.time}-${kind}-${slug}.md`;
+
+    const lines = [
+      "---",
+      `title: "${(title || "(待 Claude 命名)").replace(/"/g,'\\"')}"`,
+      `source_type: note`,
+      `kind: ${kind}`,
+      `url: ""`,
+      `author: "Simone"`,
+      `collected_date: ${n.date}`,
+      `processed_date: ""`,
+      `inbox_origin: "inbox-uploader.html / ${kind}"`,
+      `status: raw-imported`,
+      `language: zh`,
+      `tags: [${tagsMap[kind].map(t=>`"${t}"`).join(", ")}]`,
+      "---",
+      "",
+      `# ${title || "(待 Claude 命名)"}`,
+      "",
+    ];
+    if (source) lines.push("## 来源", "", source, "");
+
+    if (kind === "clippings") {
+      const quoted = body.split(/\r?\n/).map(l => l ? `> ${l}` : ">").join("\n");
+      lines.push("## 摘录", "", quoted, "");
+      if (!source) lines.push("> Evidence status: needs-source", "");
+    } else if (kind === "ideas") {
+      lines.push("## 灵感", "", body, "");
+    } else {
+      lines.push("## 正文", "", body, "");
+    }
+    lines.push("---", "", `> 通过 inbox-uploader.html 于 ${n.iso} 生成。`);
+    return { filename, content: lines.join("\n") };
+  };
+
+  $("#textSaveBtn").addEventListener("click", async () => {
+    const built = buildMarkdown();
+    if (!built) { toast("正文是空的", false); return; }
+    if (inboxHandle) {
+      try {
+        if (!(await verifyPermission(inboxHandle))) {
+          toast("权限被撤销,请重新连接", false); updateConnUI(); return;
+        }
+        await writeFileToHandle(inboxHandle, built.filename,
+          new Blob([built.content], { type: "text/markdown;charset=utf-8" }));
+        toast(`已保存到 inbox/${built.filename}`);
+        // 可选:保存成功后清空正文(保留标题为下次起名提示)
+        textBody.value = ""; saveDraft();
+      } catch (err) {
+        toast("保存失败:" + err.message, false);
+      }
+    } else {
+      downloadText(built.content, built.filename);
+      toast(`已下载 ${built.filename}(请拖到 raw/inbox/)`);
+    }
+  });
+
+  $("#textClearBtn").addEventListener("click", () => {
+    if (!textBody.value && !textTitle.value && !textSource.value) return;
+    if (!confirm("清空当前文字内容?草稿也会被清掉。")) return;
+    textTitle.value = ""; textSource.value = ""; textBody.value = "";
+    saveDraft(); toast("已清空");
+  });
+
+  textBody.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      e.preventDefault(); $("#textSaveBtn").click();
+    }
+  });
+
+  // ============ 链接 ============
+  const buildUrlBlock = () => {
+    const n = now();
+    const lines = $("#urlBody").value.split(/\r?\n/)
+      .map(l => l.trim()).filter(l => l.length > 0);
+    if (lines.length === 0) return null;
+    const formatted = lines.map(l => l.startsWith("- ") ? l : `- ${l}`).join("\n");
+    const block = [
+      `<!-- inbox-uploader 添加于 ${n.date} ${n.time.slice(0,2)}:${n.time.slice(2)} -->`,
+      formatted, "",
+    ].join("\n");
+    return { block, filename: `${n.date}-${n.time}-urls.txt` };
+  };
+
+  // 智能追加:把 block 插入 urls.md "## 待处理" 区段下面;
+  // 若文件不存在或没有该区段,创建文件并写入完整骨架
+  const appendToUrlsMd = async (block) => {
+    const dir = inboxHandle;
+    let fileHandle, content = "";
+    try {
+      fileHandle = await dir.getFileHandle("urls.md", { create: false });
+      const f = await fileHandle.getFile();
+      content = await f.text();
+    } catch {
+      // 不存在则用骨架初始化
+      content = `# URLs to import
+
+> 把任何想看/想存的链接粘到下面就行。一行一个。
+> 处理后,Claude 会移到"已处理"区。
+
+## 待处理 (pending)
+
+## 已处理 (Claude 自动维护,不要手动编辑这部分)
+`;
+      fileHandle = await dir.getFileHandle("urls.md", { create: true });
+    }
+    const marker = "## 待处理 (pending)";
+    let newContent;
+    if (content.includes(marker)) {
+      // 在 marker 行之后插入(插在该 section 的底部 / 下一个 ## 之前更稳妥)
+      const idx = content.indexOf(marker);
+      const after = content.slice(idx + marker.length);
+      const nextHeaderRel = after.search(/\n##\s/);
+      const insertAt = nextHeaderRel === -1 ? content.length : idx + marker.length + nextHeaderRel;
+      const before = content.slice(0, insertAt);
+      const tail = content.slice(insertAt);
+      newContent = before.replace(/\s*$/, "\n\n") + block + "\n" + tail;
+    } else {
+      newContent = (content.endsWith("\n") ? content : content + "\n") +
+        "\n" + marker + "\n\n" + block + "\n";
+    }
+    const writable = await fileHandle.createWritable();
+    await writable.write(newContent);
+    await writable.close();
+  };
+
+  $("#urlAppendBtn").addEventListener("click", async () => {
+    const built = buildUrlBlock();
+    if (!built) { toast("链接是空的", false); return; }
+    if (inboxHandle) {
+      try {
+        if (!(await verifyPermission(inboxHandle))) {
+          toast("权限被撤销,请重新连接", false); updateConnUI(); return;
+        }
+        await appendToUrlsMd(built.block);
+        toast(`已追加到 raw/inbox/urls.md(待处理区)`);
+        $("#urlBody").value = ""; saveDraft();
+      } catch (err) {
+        toast("写入失败:" + err.message, false);
+      }
+    } else {
+      downloadBlob(new Blob([built.block], { type: "text/plain;charset=utf-8" }), built.filename);
+      toast(`已下载 ${built.filename}(请粘到 urls.md)`);
+    }
+  });
+
+  $("#urlCopyBtn").addEventListener("click", async () => {
+    const built = buildUrlBlock();
+    if (!built) { toast("链接是空的", false); return; }
+    try {
+      await navigator.clipboard.writeText(built.block);
+      toast("已复制到剪贴板");
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = built.block; document.body.appendChild(ta);
+      ta.select(); document.execCommand("copy"); ta.remove();
+      toast("已复制(回退方式)");
+    }
+  });
+
+  $("#urlClearBtn").addEventListener("click", () => {
+    if (!$("#urlBody").value) return;
+    if (!confirm("清空链接列表?")) return;
+    $("#urlBody").value = ""; saveDraft(); toast("已清空");
+  });
+
+  // ============ 文件 ============
+  const ext2subdir = {
+    pdf: "pdfs", epub: "pdfs",
+    md: "web", txt: "web", html: "web", htm: "web", docx: "web", doc: "web",
+    png: "images", jpg: "images", jpeg: "images", gif: "images",
+    webp: "images", bmp: "images", svg: "images",
+    srt: "videos", vtt: "videos",
+  };
+  const guessSubdir = (name) => {
+    const ext = (name.split(".").pop() || "").toLowerCase();
+    return ext2subdir[ext] || "misc";
+  };
+
+  const drop = $("#drop");
+  const fileInput = $("#fileInput");
+  const fileList = $("#fileList");
+  let queue = [];
+
+  const renderFiles = () => {
+    fileList.innerHTML = "";
+    queue.forEach((item, idx) => {
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <div style="min-width:0;">
+          <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.suggestedName}</div>
+          <div class="meta">${(item.file.size/1024).toFixed(1)} KB · 原名 ${item.file.name}</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:14px;">
+          <span class="target">→ ${item.subdir}/</span>
+          <button class="rm" title="移除">✕</button>
+        </div>`;
+      li.querySelector(".rm").addEventListener("click", () => {
+        queue.splice(idx, 1); renderFiles();
+      });
+      fileList.appendChild(li);
+    });
+  };
+
+  const addFiles = (files) => {
+    const n = now();
+    Array.from(files).forEach(f => {
+      const dot = f.name.lastIndexOf(".");
+      const base = dot > 0 ? f.name.slice(0, dot) : f.name;
+      const ext = dot > 0 ? f.name.slice(dot) : "";
+      const suggestedName = `${n.date}-${slugify(base, "file")}${ext}`;
+      queue.push({ file: f, suggestedName, subdir: guessSubdir(f.name) });
+    });
+    renderFiles();
+  };
+
+  drop.addEventListener("click", () => fileInput.click());
+  drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("dragover"); });
+  drop.addEventListener("dragleave", () => drop.classList.remove("dragover"));
+  drop.addEventListener("drop", (e) => {
+    e.preventDefault(); drop.classList.remove("dragover");
+    if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+  });
+  fileInput.addEventListener("change", (e) => {
+    if (e.target.files.length) addFiles(e.target.files);
+    fileInput.value = "";
+  });
+
+  $("#filesSaveBtn").addEventListener("click", async () => {
+    if (queue.length === 0) { toast("还没添加文件", false); return; }
+    if (inboxHandle) {
+      try {
+        if (!(await verifyPermission(inboxHandle))) {
+          toast("权限被撤销,请重新连接", false); updateConnUI(); return;
+        }
+        let ok = 0, fail = 0;
+        for (const item of queue) {
+          try {
+            const sub = await getSubdir(item.subdir);
+            await writeFileToHandle(sub, item.suggestedName, item.file);
+            ok++;
+          } catch (e) {
+            fail++;
+            console.error("file save failed:", item, e);
+          }
+        }
+        if (fail === 0) toast(`已保存 ${ok} 个文件到 inbox/`);
+        else toast(`保存 ${ok} 成功 / ${fail} 失败`, fail === 0);
+        if (ok > 0) { queue = queue.slice(ok); renderFiles(); }
+      } catch (err) {
+        toast("保存失败:" + err.message, false);
+      }
+    } else {
+      // 降级到下载
+      queue.forEach((item, i) => {
+        setTimeout(() => downloadBlob(item.file, item.suggestedName), i * 250);
+      });
+      toast(`已开始下载 ${queue.length} 个文件,请按提示拖入对应目录`);
+    }
+  });
+
+  $("#filesClearBtn").addEventListener("click", () => {
+    if (queue.length === 0) return;
+    if (!confirm("清空已选文件?")) return;
+    queue = []; renderFiles(); toast("已清空");
+  });
+
+  window.addEventListener("dragover", (e) => {
+    if ($("#panel-file").classList.contains("active")) e.preventDefault();
+  });
+  window.addEventListener("drop", (e) => {
+    if ($("#panel-file").classList.contains("active")) {
+      e.preventDefault();
+      if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+    }
+  });
+
+  // ============ 启动 ============
+  loadDraft();
+  tryRestoreHandle();
+})();
+</script>
+</body>
+</html>

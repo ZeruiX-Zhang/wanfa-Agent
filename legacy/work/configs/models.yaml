@@ -1,0 +1,65 @@
+default_chat_model: mock-chat
+default_embedding_model: mock-embedding
+default_reranker_model: mock-reranker
+prompt_version: v1
+providers:
+  mock:
+    provider: mock
+    base_url: ""
+    api_key_env: ""
+    timeout: 2
+    max_retries: 0
+    temperature: 0.0
+    max_tokens: 800
+  openai:
+    provider: openai
+    base_url: https://api.openai.com/v1
+    api_key_env: OPENAI_API_KEY
+    timeout: 30
+    max_retries: 2
+    temperature: 0.2
+    max_tokens: 1200
+  deepseek:
+    provider: deepseek
+    base_url: https://api.deepseek.com/v1
+    api_key_env: DEEPSEEK_API_KEY
+    timeout: 30
+    max_retries: 2
+    temperature: 0.2
+    max_tokens: 1200
+  qwen:
+    provider: qwen
+    base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+    api_key_env: QWEN_API_KEY
+    timeout: 30
+    max_retries: 2
+    temperature: 0.2
+    max_tokens: 1200
+  local_compatible:
+    provider: local_compatible
+    base_url: http://127.0.0.1:11434/v1
+    api_key_env: LOCAL_LLM_API_KEY
+    timeout: 30
+    max_retries: 1
+    temperature: 0.2
+    max_tokens: 1200
+models:
+  mock-chat:
+    provider: mock
+    model: mock-chat
+  mock-embedding:
+    provider: mock
+    model: mock-embedding
+    dimensions: 128
+  mock-reranker:
+    provider: mock
+    model: mock-reranker
+  gpt-4.1-mini:
+    provider: openai
+    model: gpt-4.1-mini
+  deepseek-chat:
+    provider: deepseek
+    model: deepseek-chat
+  qwen-plus:
+    provider: qwen
+    model: qwen-plus

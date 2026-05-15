@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Reality OS Capture</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: Arial, sans-serif;
+        font-size: 13px;
+      }
+
+      body {
+        margin: 0;
+        min-width: 300px;
+        background: #f7f8fa;
+        color: #16181d;
+      }
+
+      main {
+        display: grid;
+        gap: 10px;
+        padding: 12px;
+      }
+
+      label {
+        display: grid;
+        gap: 5px;
+        font-weight: 600;
+      }
+
+      input,
+      textarea {
+        box-sizing: border-box;
+        width: 100%;
+        border: 1px solid #c8ced8;
+        border-radius: 6px;
+        padding: 8px;
+        background: #ffffff;
+        color: #16181d;
+        font: inherit;
+      }
+
+      textarea {
+        min-height: 86px;
+        resize: vertical;
+      }
+
+      button {
+        height: 34px;
+        border: 0;
+        border-radius: 6px;
+        background: #1457d9;
+        color: #ffffff;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      button.secondary {
+        background: #e7ebf2;
+        color: #16181d;
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      #status {
+        min-height: 18px;
+        color: #445063;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <label>
+        Endpoint
+        <input id="endpoint" autocomplete="off" />
+      </label>
+      <label>
+        Note
+        <textarea id="note"></textarea>
+      </label>
+      <div class="row">
+        <button id="capture">Capture</button>
+        <button id="save" class="secondary">Save Endpoint</button>
+      </div>
+      <div id="status" role="status"></div>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

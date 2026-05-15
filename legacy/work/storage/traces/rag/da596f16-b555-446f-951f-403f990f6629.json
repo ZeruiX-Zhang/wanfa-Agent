@@ -1,0 +1,15 @@
+{
+  "trace_id": "da596f16-b555-446f-951f-403f990f6629",
+  "created_at": "2026-05-07T04:00:19.669562+00:00",
+  "selected_domain": "finance_research",
+  "router_latency_ms": 0.001,
+  "dense_latency_ms": 0.457,
+  "bm25_latency_ms": 0.006,
+  "fusion_latency_ms": 0.003,
+  "reranker_latency_ms": 0.005,
+  "llm_latency_ms": 0.001,
+  "total_latency_ms": 0.508,
+  "model": "local-mock",
+  "token_usage": {},
+  "sources": []
+}

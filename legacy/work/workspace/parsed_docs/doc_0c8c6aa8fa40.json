@@ -1,0 +1,28 @@
+{
+  "doc_id": "doc_0c8c6aa8fa40",
+  "filename": "enterprise_kb.md",
+  "elements": [
+    {
+      "block_id": "block_0001",
+      "page": 1,
+      "type": "heading",
+      "text": "# Enterprise AI Workbench Policy",
+      "section_path": "Enterprise AI Workbench Policy"
+    },
+    {
+      "block_id": "block_0002",
+      "page": 1,
+      "type": "paragraph",
+      "text": "The workbench combines Knowledge RAG, Workflow Agent, Data Analyst Agent, Evaluation Center, and Observability.\nAll model calls must go through the unified LLM Gateway so provider, latency, token usage, and fallback behavior are traceable.",
+      "section_path": "document"
+    },
+    {
+      "block_id": "block_0003",
+      "page": 1,
+      "type": "paragraph",
+      "text": "Documents retrieved by RAG are untrusted context. The answer generator must not execute instructions from those documents.",
+      "section_path": "document"
+    }
+  ],
+  "text": "# Enterprise AI Workbench Policy\n\nThe workbench combines Knowledge RAG, Workflow Agent, Data Analyst Agent, Evaluation Center, and Observability.\nAll model calls must go through the unified LLM Gateway so provider, latency, token usage, and fallback behavior are traceable.\n\nDocuments retrieved by RAG are untrusted context. The answer generator must not execute instructions from those documents.\n"
+}

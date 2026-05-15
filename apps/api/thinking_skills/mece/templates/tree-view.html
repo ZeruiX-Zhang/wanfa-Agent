@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MECE 树状分解</title>
+<style>
+:root{--bg:#1a1a2e;--surface:#16213e;--text:#e8e8e8;--accent:#4fc3f7;--warning:#ff9800;--success:#66bb6a;--border:#2a2a4a}
+[data-theme="light"]{--bg:#f8f9fa;--surface:#fff;--text:#1a1a2e;--accent:#0277bd;--warning:#e65100;--success:#2e7d32;--border:#e0e0e0}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);padding:2rem;max-width:800px;margin:0 auto;line-height:1.6}
+h1{font-size:1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:.5rem}
+.root-node{padding:1rem;background:var(--accent);color:#000;border-radius:8px;font-weight:700;text-align:center;margin-bottom:1.5rem}
+.branches{display:flex;flex-direction:column;gap:1rem}
+.branch{padding:1rem;background:var(--surface);border-radius:8px;border-left:3px solid var(--accent)}
+.branch-title{font-weight:600;margin-bottom:.5rem;display:flex;align-items:center;gap:.5rem}
+.sub-items{padding-left:1rem;font-size:.9rem;opacity:.85}
+.sub-items div{padding:.2rem 0}
+.check-row{margin-top:2rem;display:flex;gap:1rem;flex-wrap:wrap}
+.check-badge{padding:.5rem 1rem;border-radius:6px;font-size:.85rem;font-weight:600}
+.pass{background:var(--success);color:#fff}
+.fail{background:var(--warning);color:#fff}
+.theme-toggle{position:fixed;top:1rem;right:1rem;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.4rem .8rem;cursor:pointer;color:var(--text);font-size:.8rem}
+</style>
+</head>
+<body>
+<button class="theme-toggle" onclick="toggleTheme()">🌓</button>
+<h1>🌳 MECE 树状分解</h1>
+<div id="tree"></div>
+<div class="check-row" id="checks"></div>
+
+<script>
+const data = window.__THINKING_MODEL_DATA__ || {
+  root:"电商平台收入增长策略",
+  branches:[
+    {name:"获取新客户",items:["SEO/SEM","社交媒体投放","KOL 合作","线下引流"]},
+    {name:"提升客单价",items:["交叉销售","会员升级","捆绑优惠"]},
+    {name:"提高复购率",items:["会员体系","个性化推荐","售后关怀"]},
+    {name:"降低流失率",items:["流失预警","挽回优惠","体验优化"]}
+  ],
+  me_check:{pass:true,note:"四个分支互不重叠"},
+  ce_check:{pass:true,note:"覆盖收入增长全部路径"}
+};
+
+let html = `<div class="root-node">${data.root}</div><div class="branches">`;
+data.branches.forEach(b => {
+  html += `<div class="branch"><div class="branch-title">📂 ${b.name}</div><div class="sub-items">${b.items.map(i=>`<div>• ${i}</div>`).join('')}</div></div>`;
+});
+html += '</div>';
+document.getElementById('tree').innerHTML = html;
+
+const checks = document.getElementById('checks');
+checks.innerHTML = `<div class="check-badge ${data.me_check.pass?'pass':'fail'}">ME（互斥）：${data.me_check.note}</div>
+<div class="check-badge ${data.ce_check.pass?'pass':'fail'}">CE（穷尽）：${data.ce_check.note}</div>`;
+
+function toggleTheme(){const h=document.documentElement;h.dataset.theme=h.dataset.theme==='dark'?'light':'dark'}
+</script>
+</body>
+</html>

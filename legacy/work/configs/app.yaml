@@ -1,0 +1,15 @@
+app:
+  name: Enterprise AI Workbench
+  environment: dev
+  api_prefix: /api
+  storage_dir: storage
+  mock_mode_default: true
+security:
+  auth_enabled: true
+  rate_limit_enabled: true
+  requests_per_minute: 120
+  token_budget_per_minute: 120000
+observability:
+  trace_store: storage/traces/runs.jsonl
+  event_log: storage/traces/events.jsonl
+  llm_log: storage/traces/llm_calls.jsonl

@@ -1,0 +1,149 @@
+{
+  "eval_run_id": "02eb6b53-19a8-4d76-9e35-5824b4def2ac",
+  "run_type": "retrieval",
+  "metrics": {
+    "source_hit": 1.0,
+    "keyword_hit": 1.0,
+    "hit_rate": 1.0,
+    "mrr": 1.0,
+    "average_rank": 1.0
+  },
+  "details": {
+    "cases": [
+      {
+        "question": "What is the enterprise customer P1 response time?",
+        "query": "What is the enterprise customer P1 response time?",
+        "expected_source": null,
+        "expected_filename": null,
+        "expected_domain": "customer_support",
+        "retrieved_sources": [
+          "enterprise_sla.txt"
+        ],
+        "hit": true,
+        "rank": 1,
+        "results": [
+          {
+            "chunk_id": "enterprise_sla:1",
+            "document_id": "enterprise_sla",
+            "domain": "customer_support",
+            "tenant_id": "demo",
+            "doc_type": "kb",
+            "access_roles": [
+              "employee",
+              "support",
+              "finance",
+              "ops",
+              "legal",
+              "analyst",
+              "manager"
+            ],
+            "section_path": "paragraph-1",
+            "filename": "enterprise_sla.txt",
+            "page": 1,
+            "score": 0.5327868852459017,
+            "rank": 1,
+            "source": "reranker",
+            "metadata": {
+              "component_ranks": {
+                "dense": 1,
+                "bm25": 1
+              },
+              "representative_source": "bm25",
+              "reranker_provider": "simple",
+              "original_source": "hybrid",
+              "original_score": 0.03278688524590164,
+              "term_overlap": 4
+            },
+            "text": "Enterprise customer P1 incidents require a first response within 30 minutes."
+          },
+          {
+            "chunk_id": "enterprise_sla:2",
+            "document_id": "enterprise_sla",
+            "domain": "customer_support",
+            "tenant_id": "demo",
+            "doc_type": "kb",
+            "access_roles": [
+              "employee",
+              "support",
+              "finance",
+              "ops",
+              "legal",
+              "analyst",
+              "manager"
+            ],
+            "section_path": "paragraph-2",
+            "filename": "enterprise_sla.txt",
+            "page": 2,
+            "score": 0.282258064516129,
+            "rank": 2,
+            "source": "reranker",
+            "metadata": {
+              "component_ranks": {
+                "dense": 2,
+                "bm25": 2
+              },
+              "representative_source": "bm25",
+              "reranker_provider": "simple",
+              "original_source": "hybrid",
+              "original_score": 0.03225806451612903,
+              "term_overlap": 2
+            },
+            "text": "For P1 tickets, the support team must acknowledge the issue within 30 minutes, assign an owner, and notify the duty manager if the incident affects production users."
+          },
+          {
+            "chunk_id": "enterprise_sla:3",
+            "document_id": "enterprise_sla",
+            "domain": "customer_support",
+            "tenant_id": "demo",
+            "doc_type": "kb",
+            "access_roles": [
+              "employee",
+              "support",
+              "finance",
+              "ops",
+              "legal",
+              "analyst",
+              "manager"
+            ],
+            "section_path": "paragraph-3",
+            "filename": "enterprise_sla.txt",
+            "page": 3,
+            "score": 0.15674603174603174,
+            "rank": 3,
+            "source": "reranker",
+            "metadata": {
+              "component_ranks": {
+                "dense": 3,
+                "bm25": 3
+              },
+              "representative_source": "bm25",
+              "reranker_provider": "simple",
+              "original_source": "hybrid",
+              "original_score": 0.031746031746031744,
+              "term_overlap": 1
+            },
+            "text": "企业客户 P1 问题要求在 30 分钟内首次响应。\n支持团队需要在 30 分钟内确认问题、分配负责人，并在影响生产用户时通知值班经理。"
+          }
+        ]
+      }
+    ]
+  },
+  "domain": "customer_support",
+  "total": 1,
+  "total_questions": 1,
+  "hit_rate": 1.0,
+  "mrr": 1.0,
+  "average_rank": 1.0,
+  "results": [
+    {
+      "question": "What is the enterprise customer P1 response time?",
+      "expected_source": null,
+      "expected_filename": null,
+      "retrieved_sources": [
+        "enterprise_sla.txt"
+      ],
+      "hit": true,
+      "rank": 1
+    }
+  ]
+}

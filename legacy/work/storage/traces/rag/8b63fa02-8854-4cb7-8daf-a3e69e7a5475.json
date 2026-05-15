@@ -1,0 +1,115 @@
+{
+  "trace_id": "8b63fa02-8854-4cb7-8daf-a3e69e7a5475",
+  "created_at": "2026-05-07T04:00:19.681545+00:00",
+  "selected_domain": "ops_runbook",
+  "router_latency_ms": 0.001,
+  "dense_latency_ms": 0.433,
+  "bm25_latency_ms": 0.048,
+  "fusion_latency_ms": 0.011,
+  "reranker_latency_ms": 0.03,
+  "llm_latency_ms": 0.016,
+  "total_latency_ms": 0.614,
+  "model": "local-mock",
+  "token_usage": {},
+  "sources": [
+    {
+      "chunk_id": "payment_runbook:3",
+      "document_id": "payment_runbook",
+      "domain": "ops_runbook",
+      "tenant_id": "demo",
+      "doc_type": "kb",
+      "access_roles": [
+        "employee",
+        "support",
+        "finance",
+        "ops",
+        "legal",
+        "analyst",
+        "manager"
+      ],
+      "section_path": "paragraph-3",
+      "filename": "payment_runbook.md",
+      "page": 3,
+      "score": 0.01639344262295082,
+      "rank": 1,
+      "source": "reranker",
+      "metadata": {
+        "component_ranks": {
+          "dense": 1
+        },
+        "representative_source": "dense",
+        "reranker_provider": "simple",
+        "original_source": "hybrid",
+        "original_score": 0.01639344262295082,
+        "term_overlap": 0
+      },
+      "text": "故障处理流程：检查支付网关健康状态、重试队列、第三方通道状态，必要时切换备用通道并记录事件。"
+    },
+    {
+      "chunk_id": "payment_runbook:2",
+      "document_id": "payment_runbook",
+      "domain": "ops_runbook",
+      "tenant_id": "demo",
+      "doc_type": "kb",
+      "access_roles": [
+        "employee",
+        "support",
+        "finance",
+        "ops",
+        "legal",
+        "analyst",
+        "manager"
+      ],
+      "section_path": "paragraph-2",
+      "filename": "payment_runbook.md",
+      "page": 2,
+      "score": 0.016129032258064516,
+      "rank": 2,
+      "source": "reranker",
+      "metadata": {
+        "component_ranks": {
+          "dense": 2
+        },
+        "representative_source": "dense",
+        "reranker_provider": "simple",
+        "original_source": "hybrid",
+        "original_score": 0.016129032258064516,
+        "term_overlap": 0
+      },
+      "text": "支付错误码 PAY-502 表示支付网关超时。"
+    },
+    {
+      "chunk_id": "payment_runbook:1",
+      "document_id": "payment_runbook",
+      "domain": "ops_runbook",
+      "tenant_id": "demo",
+      "doc_type": "kb",
+      "access_roles": [
+        "employee",
+        "support",
+        "finance",
+        "ops",
+        "legal",
+        "analyst",
+        "manager"
+      ],
+      "section_path": "paragraph-1",
+      "filename": "payment_runbook.md",
+      "page": 1,
+      "score": 0.015873015873015872,
+      "rank": 3,
+      "source": "reranker",
+      "metadata": {
+        "component_ranks": {
+          "dense": 3
+        },
+        "representative_source": "dense",
+        "reranker_provider": "simple",
+        "original_source": "hybrid",
+        "original_score": 0.015873015873015872,
+        "term_overlap": 0
+      },
+      "text": "# Payment Runbook"
+    }
+  ]
+}

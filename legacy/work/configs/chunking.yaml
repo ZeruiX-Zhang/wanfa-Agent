@@ -1,0 +1,14 @@
+strategy: hybrid
+chunk_size_tokens: 380
+chunk_overlap_tokens: 60
+min_chunk_tokens: 40
+max_chunk_tokens: 520
+split_by_heading: true
+split_by_paragraph: true
+keep_heading_in_chunk: true
+keep_table_together: true
+table_chunk_mode: markdown_block
+preserve_page_range: true
+preserve_section_path: true
+merge_small_chunks: true
+adjacent_chunk_expansion_enabled: true

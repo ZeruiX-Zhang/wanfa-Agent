@@ -1,0 +1,233 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------------------------------------------------------------------------
+ * Theming via CSS variables.
+ *
+ * Each palette declares its own token set for both light and dark surfaces.
+ * Tailwind resolves the `background`, `foreground`, `panel`, ... colors via
+ * the CSS variables referenced in tailwind.config.ts. Switching palettes or
+ * appearance is a matter of toggling `data-theme` / `data-appearance` on
+ * `<html>`.
+ * ------------------------------------------------------------------------- */
+
+:root,
+html[data-theme="obsidian"][data-appearance="light"] {
+  --color-background: 247 249 252;
+  --color-foreground: 20 28 40;
+  --color-panel: 255 255 255;
+  --color-panel-muted: 243 246 252;
+  --color-border: 223 229 238;
+  --color-border-strong: 198 207 220;
+  --color-muted: 95 108 128;
+  --color-accent: 37 99 235; /* indigo-blue anchor */
+  --color-accent-soft: 219 234 254;
+  --color-accent-foreground: 255 255 255;
+  --color-success: 34 120 87;
+  --color-warning: 176 88 17;
+  --color-danger: 180 35 24;
+  --color-ink: 12 18 28;
+  --color-shadow: 15 23 42;
+  --shadow-panel: 0 1px 2px rgba(15, 23, 42, 0.05), 0 8px 24px -16px rgba(15, 23, 42, 0.12);
+  --radius-panel: 12px;
+}
+
+html[data-theme="obsidian"][data-appearance="dark"] {
+  --color-background: 10 14 22;
+  --color-foreground: 228 233 242;
+  --color-panel: 17 23 34;
+  --color-panel-muted: 22 29 43;
+  --color-border: 35 44 60;
+  --color-border-strong: 51 63 82;
+  --color-muted: 150 162 182;
+  --color-accent: 96 165 250;
+  --color-accent-soft: 24 40 72;
+  --color-accent-foreground: 10 14 22;
+  --color-success: 74 222 128;
+  --color-warning: 250 204 21;
+  --color-danger: 248 113 113;
+  --color-ink: 228 233 242;
+  --color-shadow: 0 0 0;
+  --shadow-panel: 0 1px 1px rgba(0, 0, 0, 0.5), 0 12px 32px -20px rgba(0, 0, 0, 0.6);
+  --radius-panel: 12px;
+}
+
+html[data-theme="pearl"][data-appearance="light"] {
+  --color-background: 253 252 248;
+  --color-foreground: 30 32 36;
+  --color-panel: 255 255 255;
+  --color-panel-muted: 248 247 244;
+  --color-border: 229 227 220;
+  --color-border-strong: 205 201 190;
+  --color-muted: 108 108 112;
+  --color-accent: 120 90 60;
+  --color-accent-soft: 245 236 222;
+  --color-accent-foreground: 255 255 255;
+  --color-success: 42 122 102;
+  --color-warning: 156 101 18;
+  --color-danger: 158 51 39;
+  --color-ink: 30 32 36;
+  --color-shadow: 30 30 30;
+  --shadow-panel: 0 1px 2px rgba(30, 30, 30, 0.04), 0 12px 32px -20px rgba(30, 30, 30, 0.1);
+  --radius-panel: 10px;
+}
+
+html[data-theme="pearl"][data-appearance="dark"] {
+  --color-background: 26 24 22;
+  --color-foreground: 238 234 226;
+  --color-panel: 32 30 28;
+  --color-panel-muted: 40 37 33;
+  --color-border: 66 60 52;
+  --color-border-strong: 92 84 74;
+  --color-muted: 172 166 152;
+  --color-accent: 208 170 126;
+  --color-accent-soft: 62 50 36;
+  --color-accent-foreground: 26 24 22;
+  --color-success: 134 209 183;
+  --color-warning: 236 196 96;
+  --color-danger: 236 128 112;
+  --color-ink: 238 234 226;
+  --color-shadow: 0 0 0;
+  --shadow-panel: 0 1px 1px rgba(0, 0, 0, 0.4), 0 12px 28px -18px rgba(0, 0, 0, 0.6);
+  --radius-panel: 10px;
+}
+
+html[data-theme="graphite"][data-appearance="light"] {
+  --color-background: 248 248 248;
+  --color-foreground: 22 22 22;
+  --color-panel: 255 255 255;
+  --color-panel-muted: 240 240 240;
+  --color-border: 222 222 222;
+  --color-border-strong: 196 196 196;
+  --color-muted: 102 102 102;
+  --color-accent: 30 30 30;
+  --color-accent-soft: 232 232 232;
+  --color-accent-foreground: 255 255 255;
+  --color-success: 38 120 82;
+  --color-warning: 166 96 17;
+  --color-danger: 180 35 24;
+  --color-ink: 14 14 14;
+  --color-shadow: 20 20 20;
+  --shadow-panel: 0 1px 1px rgba(20, 20, 20, 0.04), 0 8px 24px -20px rgba(20, 20, 20, 0.14);
+  --radius-panel: 8px;
+}
+
+html[data-theme="graphite"][data-appearance="dark"] {
+  --color-background: 12 12 12;
+  --color-foreground: 236 236 236;
+  --color-panel: 20 20 20;
+  --color-panel-muted: 26 26 26;
+  --color-border: 42 42 42;
+  --color-border-strong: 64 64 64;
+  --color-muted: 160 160 160;
+  --color-accent: 236 236 236;
+  --color-accent-soft: 38 38 38;
+  --color-accent-foreground: 12 12 12;
+  --color-success: 134 209 183;
+  --color-warning: 236 196 96;
+  --color-danger: 244 124 110;
+  --color-ink: 236 236 236;
+  --color-shadow: 0 0 0;
+  --shadow-panel: 0 1px 1px rgba(0, 0, 0, 0.5), 0 12px 28px -20px rgba(0, 0, 0, 0.6);
+  --radius-panel: 8px;
+}
+
+html[data-theme="aurora"][data-appearance="light"] {
+  --color-background: 244 248 252;
+  --color-foreground: 15 28 43;
+  --color-panel: 255 255 255;
+  --color-panel-muted: 233 242 250;
+  --color-border: 207 221 236;
+  --color-border-strong: 170 192 214;
+  --color-muted: 90 108 130;
+  --color-accent: 13 148 136;
+  --color-accent-soft: 207 244 237;
+  --color-accent-foreground: 255 255 255;
+  --color-success: 26 131 108;
+  --color-warning: 176 88 17;
+  --color-danger: 180 35 24;
+  --color-ink: 12 27 45;
+  --color-shadow: 12 27 45;
+  --shadow-panel: 0 1px 2px rgba(12, 27, 45, 0.06), 0 12px 30px -20px rgba(12, 27, 45, 0.2);
+  --radius-panel: 14px;
+}
+
+html[data-theme="aurora"][data-appearance="dark"] {
+  --color-background: 8 16 26;
+  --color-foreground: 226 236 247;
+  --color-panel: 14 24 38;
+  --color-panel-muted: 18 30 48;
+  --color-border: 32 46 64;
+  --color-border-strong: 52 72 96;
+  --color-muted: 156 172 196;
+  --color-accent: 45 212 191;
+  --color-accent-soft: 14 44 52;
+  --color-accent-foreground: 8 16 26;
+  --color-success: 74 222 128;
+  --color-warning: 250 204 21;
+  --color-danger: 248 113 113;
+  --color-ink: 226 236 247;
+  --color-shadow: 0 0 0;
+  --shadow-panel: 0 1px 1px rgba(0, 0, 0, 0.5), 0 14px 36px -24px rgba(0, 0, 0, 0.65);
+  --radius-panel: 14px;
+}
+
+html {
+  color-scheme: light;
+}
+
+html[data-appearance="dark"] {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: rgb(var(--color-background));
+  color: rgb(var(--color-foreground));
+  font-family:
+    "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC",
+    "Source Han Sans SC", "Microsoft YaHei", ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "cv02" on, "cv11" on, "ss01" on;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.markdown-preview h1 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: 0 0 1rem;
+}
+
+.markdown-preview h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 1.25rem 0 0.5rem;
+}
+
+.markdown-preview h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 1rem 0 0.35rem;
+}
+
+.markdown-preview p,
+.markdown-preview li {
+  font-size: 0.875rem;
+  line-height: 1.6;
+}

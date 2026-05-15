@@ -1,0 +1,11 @@
+product_name: Enterprise RAG Workbench
+mode: Demo Mode
+workspace_root: workspace
+auto_seed_demo_on_start: true
+pipeline:
+- parse
+- clean
+- chunk
+- annotate
+- embed
+- index

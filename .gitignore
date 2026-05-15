@@ -1,0 +1,41 @@
+# Secrets
+.env
+.env.local
+.env.production
+.env.development
+.env.test
+*.pem
+*.key
+
+# Python
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.venv/
+.venv*/
+venv/
+venv*/
+*.pyc
+
+# Node
+node_modules/
+.next/
+dist/
+build/
+*.tsbuildinfo
+
+# Rust / Tauri
+target/
+
+# Local runtime artifacts
+*.log
+*.tmp
+.runtime/
+test-results/
+playwright-report/
+
+# Keep legacy runtime assets unless explicitly migrated and reviewed.
+!legacy/**/workspace/**
+!legacy/**/storage/**
+!legacy/**/knowledge_os/**
+!legacy/**/study/**

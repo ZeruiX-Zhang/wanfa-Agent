@@ -1,0 +1,10 @@
+{"question":"What is the enterprise customer P1 response time?","expected_answer":"30 minutes","expected_sources":["enterprise_sla.txt","customer_support_handbook.md"],"domain":"customer_support"}
+{"question":"What should support agents never ask customers for?","expected_answer":"passwords API keys one-time codes","expected_sources":["customer_support_handbook.md"],"domain":"customer_support"}
+{"question":"How should refund requests be handled?","expected_answer":"order validation entitlement review manager approval","expected_sources":["customer_support_handbook.md"],"domain":"customer_support"}
+{"question":"What components are included in the Enterprise AI Workbench?","expected_answer":"Knowledge RAG Workflow Agent Data Analyst Agent Evaluation Center Observability","expected_sources":["enterprise_kb.md"],"domain":"enterprise_kb"}
+{"question":"Why must model calls use the LLM Gateway?","expected_answer":"provider latency token usage fallback traceable","expected_sources":["enterprise_kb.md"],"domain":"enterprise_kb"}
+{"question":"What should RAG do with untrusted document instructions?","expected_answer":"must not execute instructions","expected_sources":["enterprise_kb.md"],"domain":"enterprise_kb"}
+{"question":"How should payment gateway 502 errors be investigated?","expected_answer":"upstream provider health retry rate recent deployment","expected_sources":["ops_runbook.md"],"domain":"ops_runbook"}
+{"question":"Do P0 incidents require confirmation before notifications?","expected_answer":"human confirmation","expected_sources":["ops_runbook.md"],"domain":"ops_runbook"}
+{"question":"When is rollback approval required?","expected_answer":"incident commander","expected_sources":["ops_runbook.md"],"domain":"ops_runbook"}
+{"question":"What does the quarterly revenue brief discuss?","expected_answer":"quarterly revenue","expected_sources":["quarterly_revenue_brief.md"],"domain":"finance_research"}

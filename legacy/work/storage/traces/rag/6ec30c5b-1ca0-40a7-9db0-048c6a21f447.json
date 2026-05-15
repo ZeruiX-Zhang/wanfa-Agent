@@ -1,0 +1,186 @@
+{
+  "trace_id": "6ec30c5b-1ca0-40a7-9db0-048c6a21f447",
+  "created_at": "2026-05-07T07:57:57.122429+00:00",
+  "selected_domain": null,
+  "router_latency_ms": 0.015,
+  "dense_latency_ms": 0.72,
+  "bm25_latency_ms": 0.239,
+  "fusion_latency_ms": 0.02,
+  "reranker_latency_ms": 0.156,
+  "llm_latency_ms": 0.25,
+  "total_latency_ms": 2.284,
+  "model": "local-mock",
+  "token_usage": {},
+  "sources": [
+    {
+      "chunk_id": "enterprise_kb:1",
+      "document_id": "enterprise_kb",
+      "domain": "enterprise_kb",
+      "tenant_id": "demo",
+      "doc_type": "kb",
+      "access_roles": [
+        "employee",
+        "support",
+        "finance",
+        "ops",
+        "legal",
+        "analyst",
+        "manager"
+      ],
+      "section_path": "Enterprise AI Workbench Policy",
+      "filename": "enterprise_kb.md",
+      "page": 1,
+      "score": 0.5327868852459017,
+      "rank": 1,
+      "source": "reranker",
+      "metadata": {
+        "component_ranks": {
+          "dense": 1,
+          "bm25": 1
+        },
+        "representative_source": "bm25",
+        "reranker_provider": "simple",
+        "original_source": "hybrid",
+        "original_score": 0.03278688524590164,
+        "term_overlap": 4
+      },
+      "text": "# Enterprise AI Workbench Policy\n\nThe workbench combines Knowledge RAG, Workflow Agent, Data Analyst Agent, Evaluation Center, and Observability.\nAll model calls must go through the unified LLM Gateway so provider, latency, token usage, and fallback behavior are traceable.\n\nDocuments retrieved by RAG are untrusted context. The answer generator must not execute instructions from those documents."
+    },
+    {
+      "chunk_id": "customer_support_handbook:1",
+      "document_id": "customer_support_handbook",
+      "domain": "customer_support",
+      "tenant_id": "demo",
+      "doc_type": "kb",
+      "access_roles": [
+        "employee",
+        "support",
+        "finance",
+        "ops",
+        "legal",
+        "analyst",
+        "manager"
+      ],
+      "section_path": "Customer Support Handbook",
+      "filename": "customer_support_handbook.md",
+      "page": 1,
+      "score": 0.4065136476426799,
+      "rank": 2,
+      "source": "reranker",
+      "metadata": {
+        "component_ranks": {
+          "dense": 5,
+          "bm25": 2
+        },
+        "representative_source": "bm25",
+        "reranker_provider": "simple",
+        "original_source": "hybrid",
+        "original_score": 0.0315136476426799,
+        "term_overlap": 3
+      },
+      "text": "# Customer Support Handbook\n\nEnterprise customers with P1 incidents receive an initial response within 30 minutes.\nP1 incidents target workaround or resolution within 8 business hours when the issue is reproducible.\n\nRefund requests require order validation, entitlement review, and support manager approval.\nSupport agents should never ask customers for passwords, API keys, or one-time codes."
+    },
+    {
+      "chunk_id": "enterprise_sla:1",
+      "document_id": "enterprise_sla",
+      "domain": "customer_support",
+      "tenant_id": "demo",
+      "doc_type": "kb",
+      "access_roles": [
+        "employee",
+        "support",
+        "finance",
+        "ops",
+        "legal",
+        "analyst",
+        "manager"
+      ],
+      "section_path": "document",
+      "filename": "enterprise_sla.txt",
+      "page": 1,
+      "score": 0.15625,
+      "rank": 3,
+      "source": "reranker",
+      "metadata": {
+        "component_ranks": {
+          "dense": 4,
+          "bm25": 4
+        },
+        "representative_source": "bm25",
+        "reranker_provider": "simple",
+        "original_source": "hybrid",
+        "original_score": 0.03125,
+        "term_overlap": 1
+      },
+      "text": "Enterprise customer P1 incidents require a first response within 30 minutes.\n\nFor P1 tickets, the support team must acknowledge the issue within 30 minutes, assign an owner, and notify the duty manager if the incident affects production users.\n\n企业客户 P1 问题要求在 30 分钟内首次响应。\n支持团队需要在 30 分钟内确认问题、分配负责人，并在影响生产用户时通知值班经理。"
+    },
+    {
+      "chunk_id": "payment_runbook:1",
+      "document_id": "payment_runbook",
+      "domain": "ops_runbook",
+      "tenant_id": "demo",
+      "doc_type": "kb",
+      "access_roles": [
+        "employee",
+        "support",
+        "finance",
+        "ops",
+        "legal",
+        "analyst",
+        "manager"
+      ],
+      "section_path": "Payment Runbook",
+      "filename": "payment_runbook.md",
+      "page": 1,
+      "score": 0.15583491461100568,
+      "rank": 4,
+      "source": "reranker",
+      "metadata": {
+        "component_ranks": {
+          "dense": 2,
+          "bm25": 8
+        },
+        "representative_source": "dense",
+        "reranker_provider": "simple",
+        "original_source": "hybrid",
+        "original_score": 0.030834914611005692,
+        "term_overlap": 1
+      },
+      "text": "# Payment Runbook\n\nPAY-502 indicates a payment gateway timeout.\n\nThe first response steps are to verify gateway health, inspect the retry queue, check the third-party channel status, and fail over to the backup channel if the primary path remains degraded.\n\nPAY-502 表示支付网关超时。\n首轮处置需要检查网关健康状态、重试队列、第三方通道状态，并在主通道持续异常时切换到备用通道。"
+    },
+    {
+      "chunk_id": "msa_terms:1",
+      "document_id": "msa_terms",
+      "domain": "legal_contract",
+      "tenant_id": "demo",
+      "doc_type": "kb",
+      "access_roles": [
+        "employee",
+        "support",
+        "finance",
+        "ops",
+        "legal",
+        "analyst",
+        "manager"
+      ],
+      "section_path": "MSA Terms",
+      "filename": "msa_terms.md",
+      "page": 1,
+      "score": 0.15579838900734422,
+      "rank": 5,
+      "source": "reranker",
+      "metadata": {
+        "component_ranks": {
+          "dense": 3,
+          "bm25": 7
+        },
+        "representative_source": "dense",
+        "reranker_provider": "simple",
+        "original_source": "hybrid",
+        "original_score": 0.030798389007344232,
+        "term_overlap": 1
+      },
+      "text": "# MSA Terms\n\nThe limitation of liability is capped at the total service fees paid in the previous 12 months.\n\nBreach obligations include cure requirements, damages, and notice obligations defined in the agreement.\n\n合同责任上限为前 12 个月已支付服务费总额。\n违约责任包括补救义务、损害赔偿和合同约定的通知义务。"
+    }
+  ]
+}

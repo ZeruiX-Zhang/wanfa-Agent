@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>预验尸风险墙</title>
+<style>
+:root{--bg:#1a1a2e;--surface:#16213e;--text:#e8e8e8;--accent:#4fc3f7;--warning:#ff9800;--success:#66bb6a;--border:#2a2a4a;--danger:#ef5350}
+[data-theme="light"]{--bg:#f8f9fa;--surface:#fff;--text:#1a1a2e;--accent:#0277bd;--warning:#e65100;--success:#2e7d32;--border:#e0e0e0;--danger:#c62828}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);padding:2rem;max-width:800px;margin:0 auto;line-height:1.6}
+h1{font-size:1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:.5rem}
+.cards{display:flex;flex-direction:column;gap:1rem}
+.card{padding:1rem 1.25rem;background:var(--surface);border-radius:8px;border-left:4px solid var(--border)}
+.card.high{border-left-color:var(--danger)}
+.card.medium{border-left-color:var(--warning)}
+.card.low{border-left-color:var(--success)}
+.card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem}
+.card-title{font-weight:600}
+.severity{font-size:.7rem;padding:2px 8px;border-radius:4px;color:#fff;text-transform:uppercase}
+.severity.high{background:var(--danger)}
+.severity.medium{background:var(--warning)}
+.severity.low{background:var(--success)}
+.card-scenario{opacity:.85;margin-bottom:.5rem;font-size:.9rem}
+.card-prevention{font-size:.85rem;color:var(--accent);padding-top:.5rem;border-top:1px solid var(--border)}
+.theme-toggle{position:fixed;top:1rem;right:1rem;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.4rem .8rem;cursor:pointer;color:var(--text);font-size:.8rem}
+</style>
+</head>
+<body>
+<button class="theme-toggle" onclick="toggleTheme()">🌓</button>
+<h1>🧱 预验尸风险墙</h1>
+<div class="cards" id="cards"></div>
+
+<script>
+const data = window.__THINKING_MODEL_DATA__ || {
+  project:"新支付系统上线",
+  risks:[
+    {title:"支付数据丢失",scenario:"数据库迁移脚本有 bug，生产环境丢失交易记录",severity:"high",prevention:"迁移前全量备份 + 灰度切流 10% 验证"},
+    {title:"第三方网关宕机",scenario:"支付高峰期网关超时，用户无法完成付款",severity:"high",prevention:"接入备用网关，设置 3 秒超时自动切换"},
+    {title:"合规审查未通过",scenario:"上线后被监管要求下架整改",severity:"medium",prevention:"提前 2 周提交合规材料，获得书面确认"},
+    {title:"用户体验退化",scenario:"新流程步骤多，转化率下降",severity:"low",prevention:"A/B 测试 1 周，转化率不低于旧版 95%"}
+  ]
+};
+
+const order = {high:0,medium:1,low:2};
+const sorted = [...data.risks].sort((a,b)=>order[a.severity]-order[b.severity]);
+const cards = document.getElementById('cards');
+sorted.forEach(r => {
+  cards.innerHTML += `<div class="card ${r.severity}"><div class="card-header"><span class="card-title">${r.title}</span><span class="severity ${r.severity}">${r.severity}</span></div><div class="card-scenario">${r.scenario}</div><div class="card-prevention">🛡️ ${r.prevention}</div></div>`;
+});
+
+function toggleTheme(){const h=document.documentElement;h.dataset.theme=h.dataset.theme==='dark'?'light':'dark'}
+</script>
+</body>
+</html>

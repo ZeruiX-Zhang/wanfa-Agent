@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5 Whys 追问链</title>
+<style>
+:root{--bg:#1a1a2e;--surface:#16213e;--text:#e8e8e8;--accent:#4fc3f7;--warning:#ff9800;--success:#66bb6a;--border:#2a2a4a}
+[data-theme="light"]{--bg:#f8f9fa;--surface:#fff;--text:#1a1a2e;--accent:#0277bd;--warning:#e65100;--success:#2e7d32;--border:#e0e0e0}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);padding:2rem;max-width:720px;margin:0 auto;line-height:1.6}
+h1{font-size:1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:.5rem}
+.chain{position:relative;padding-left:2rem}
+.chain::before{content:'';position:absolute;left:0.75rem;top:0;bottom:0;width:2px;background:var(--border)}
+.step{position:relative;margin-bottom:1.25rem;padding:1rem 1.25rem;background:var(--surface);border-radius:8px;border-left:3px solid var(--accent)}
+.step.hypothesis{border-left-color:var(--warning)}
+.step::before{content:'';position:absolute;left:-1.65rem;top:1.2rem;width:10px;height:10px;border-radius:50%;background:var(--accent)}
+.step.hypothesis::before{background:var(--warning)}
+.step-level{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--accent);margin-bottom:.25rem}
+.step.hypothesis .step-level{color:var(--warning)}
+.step-question{font-weight:600;margin-bottom:.25rem}
+.step-answer{opacity:.9}
+.step-badge{display:inline-block;font-size:.7rem;padding:2px 6px;border-radius:4px;margin-left:.5rem;vertical-align:middle}
+.badge-fact{background:var(--success);color:#fff}
+.badge-hypothesis{background:var(--warning);color:#fff}
+.root-cause{margin-top:2rem;padding:1.25rem;background:var(--accent);color:#000;border-radius:8px;font-weight:600}
+.action{margin-top:1rem;padding:1rem;border:2px dashed var(--accent);border-radius:8px}
+.action-label{font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--accent);margin-bottom:.25rem}
+.theme-toggle{position:fixed;top:1rem;right:1rem;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.4rem .8rem;cursor:pointer;color:var(--text);font-size:.8rem}
+</style>
+</head>
+<body>
+<button class="theme-toggle" onclick="toggleTheme()">🌓 切换主题</button>
+<h1>🔍 5 Whys 追问链</h1>
+<div class="chain" id="chain"></div>
+<div id="root-cause"></div>
+<div id="action"></div>
+
+<script>
+const data = window.__THINKING_MODEL_DATA__ || {
+  why_chain: [
+    {level:1, question:"为什么转化率低？", answer:"用户在支付页流失", evidence_type:"fact"},
+    {level:2, question:"为什么在支付页流失？", answer:"加载时间超过 5 秒", evidence_type:"fact"},
+    {level:3, question:"为什么加载慢？", answer:"第三方支付 SDK 体积过大", evidence_type:"hypothesis"},
+    {level:4, question:"为什么用这个 SDK？", answer:"当时没有对比就选了最知名的", evidence_type:"fact"},
+  ],
+  root_cause: "选型时未做性能基准测试，导致引入了过重的支付 SDK",
+  minimum_action: "本周测量当前 SDK 加载时间，对比 2 个轻量替代方案"
+};
+
+const chain = document.getElementById('chain');
+data.why_chain.forEach(step => {
+  const cls = step.evidence_type === 'hypothesis' ? 'step hypothesis' : 'step';
+  const badge = step.evidence_type === 'hypothesis'
+    ? '<span class="step-badge badge-hypothesis">假设 [?]</span>'
+    : '<span class="step-badge badge-fact">事实 ✓</span>';
+  chain.innerHTML += `
+    <div class="${cls}">
+      <div class="step-level">Why ${step.level}</div>
+      <div class="step-question">${step.question}</div>
+      <div class="step-answer">→ ${step.answer} ${badge}</div>
+    </div>`;
+});
+
+if (data.root_cause) {
+  document.getElementById('root-cause').innerHTML =
+    `<div class="root-cause">🎯 根因：${data.root_cause}</div>`;
+}
+if (data.minimum_action) {
+  document.getElementById('action').innerHTML =
+    `<div class="action"><div class="action-label">最小验证行动</div>${data.minimum_action}</div>`;
+}
+
+function toggleTheme() {
+  const html = document.documentElement;
+  html.dataset.theme = html.dataset.theme === 'dark' ? 'light' : 'dark';
+}
+</script>
+</body>
+</html>

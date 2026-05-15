@@ -1,0 +1,127 @@
+{
+  "target": "rag",
+  "metrics": {
+    "overall_score": 83.0,
+    "context_precision": 0.9,
+    "context_recall": 0.9,
+    "faithfulness": 0.83,
+    "answer_relevancy": 0.83,
+    "citation_accuracy": 0.9,
+    "retrieval_hit_rate": 0.9,
+    "latency": 9.63,
+    "cost": 0.0
+  },
+  "results": [
+    {
+      "question": "What is the enterprise customer P1 response time?",
+      "expected_answer": "30 minutes",
+      "expected_sources": "enterprise_sla.txt, customer_support_handbook.md",
+      "actual_answer": "根据当前知识库检索到的证据：\n- Enterprise customers with P1 incidents receive an initial response within 30 minutes. [1]\n- Enterprise customers with P1 incidents receive an initial response within 30 minutes. [2]\n- P0 and P1 incidents require human confirmation before sending notifications or creating incident tickets. [3]\n\n提示：当前为 Demo Mode，mock embedding 仅用于流程演示，不代表真实语义检索质量。",
+      "retrieved_chunks": "chunk_517830547568, chunk_2156a0ffd786, chunk_8b11d2592085, chunk_60e2acf6ebcd, chunk_b8b1c350f843",
+      "score": 1.0,
+      "status": "pass",
+      "failure_reason": "",
+      "trace_id": "trace_093b74693da3"
+    },
+    {
+      "question": "What should support agents never ask customers for?",
+      "expected_answer": "passwords API keys one-time codes",
+      "expected_sources": "customer_support_handbook.md",
+      "actual_answer": "根据当前知识库检索到的证据：\n- Support agents should never ask customers for passwords, API keys, or one-time codes. [1]\n- Support agents should never ask customers for passwords, API keys, or one-time codes. [2]\n- For payment gateway 502 errors, first check upstream provider health, retry rate, and recent deployment changes. [3]\n\n提示：当前为 Demo Mode，mock embedding 仅用于流程演示，不代表真实语义检索质量。",
+      "retrieved_chunks": "chunk_517830547568, chunk_2156a0ffd786, chunk_8b11d2592085, chunk_60e2acf6ebcd, chunk_b8b1c350f843",
+      "score": 1.0,
+      "status": "pass",
+      "failure_reason": "",
+      "trace_id": "trace_1ef2dea54803"
+    },
+    {
+      "question": "How should refund requests be handled?",
+      "expected_answer": "order validation entitlement review manager approval",
+      "expected_sources": "customer_support_handbook.md",
+      "actual_answer": "根据当前知识库检索到的证据：\n- Refund requests require order validation, entitlement review, and support manager approval. [1]\n- Refund requests require order validation, entitlement review, and support manager approval. [2]\n- # Enterprise AI Workbench Policy [3]\n\n提示：当前为 Demo Mode，mock embedding 仅用于流程演示，不代表真实语义检索质量。",
+      "retrieved_chunks": "chunk_517830547568, chunk_2156a0ffd786, chunk_b8b1c350f843, chunk_cfd8e3880747, chunk_8b11d2592085",
+      "score": 1.0,
+      "status": "pass",
+      "failure_reason": "",
+      "trace_id": "trace_a5ae4ad9f238"
+    },
+    {
+      "question": "What components are included in the Enterprise AI Workbench?",
+      "expected_answer": "Knowledge RAG Workflow Agent Data Analyst Agent Evaluation Center Observability",
+      "expected_sources": "enterprise_kb.md",
+      "actual_answer": "根据当前知识库检索到的证据：\n- # Enterprise AI Workbench Policy [1]\n- # Enterprise AI Workbench Policy [2]\n- Rollback requires approval from the incident commander. [3]\n\n提示：当前为 Demo Mode，mock embedding 仅用于流程演示，不代表真实语义检索质量。",
+      "retrieved_chunks": "chunk_b8b1c350f843, chunk_cfd8e3880747, chunk_8b11d2592085, chunk_60e2acf6ebcd, chunk_517830547568",
+      "score": 0.55,
+      "status": "pass",
+      "failure_reason": "",
+      "trace_id": "trace_49676c0b3264"
+    },
+    {
+      "question": "Why must model calls use the LLM Gateway?",
+      "expected_answer": "provider latency token usage fallback traceable",
+      "expected_sources": "enterprise_kb.md",
+      "actual_answer": "根据当前知识库检索到的证据：\n- All model calls must go through the unified LLM Gateway so provider, latency, token usage, and fallback behavior are traceable. [1]\n- All model calls must go through the unified LLM Gateway so provider, latency, token usage, and fallback behavior are traceable. [2]\n- For payment gateway 502 errors, first check upstream provider health, retry rate, and recent deployment changes. [3]\n\n提示：当前为 Demo Mode，mock embedding 仅用于流程演示，不代表真实语义检索质量。",
+      "retrieved_chunks": "chunk_b8b1c350f843, chunk_cfd8e3880747, chunk_8b11d2592085, chunk_60e2acf6ebcd, chunk_517830547568",
+      "score": 1.0,
+      "status": "pass",
+      "failure_reason": "",
+      "trace_id": "trace_4a699968a651"
+    },
+    {
+      "question": "What should RAG do with untrusted document instructions?",
+      "expected_answer": "must not execute instructions",
+      "expected_sources": "enterprise_kb.md",
+      "actual_answer": "根据当前知识库检索到的证据：\n- Documents retrieved by RAG are untrusted context. [1]\n- Documents retrieved by RAG are untrusted context. [2]\n- Enterprise customers with P1 incidents receive an initial response within 30 minutes. [3]\n\n提示：当前为 Demo Mode，mock embedding 仅用于流程演示，不代表真实语义检索质量。",
+      "retrieved_chunks": "chunk_b8b1c350f843, chunk_cfd8e3880747, chunk_517830547568, chunk_2156a0ffd786, chunk_8b11d2592085",
+      "score": 0.55,
+      "status": "pass",
+      "failure_reason": "",
+      "trace_id": "trace_72e6954d8bd3"
+    },
+    {
+      "question": "How should payment gateway 502 errors be investigated?",
+      "expected_answer": "upstream provider health retry rate recent deployment",
+      "expected_sources": "ops_runbook.md",
+      "actual_answer": "根据当前知识库检索到的证据：\n- For payment gateway 502 errors, first check upstream provider health, retry rate, and recent deployment changes. [1]\n- For payment gateway 502 errors, first check upstream provider health, retry rate, and recent deployment changes. [2]\n- Support agents should never ask customers for passwords, API keys, or one-time codes. [3]\n\n提示：当前为 Demo Mode，mock embedding 仅用于流程演示，不代表真实语义检索质量。",
+      "retrieved_chunks": "chunk_8b11d2592085, chunk_60e2acf6ebcd, chunk_517830547568, chunk_2156a0ffd786, chunk_b8b1c350f843",
+      "score": 1.0,
+      "status": "pass",
+      "failure_reason": "",
+      "trace_id": "trace_0c6f2c9fdf3d"
+    },
+    {
+      "question": "Do P0 incidents require confirmation before notifications?",
+      "expected_answer": "human confirmation",
+      "expected_sources": "ops_runbook.md",
+      "actual_answer": "根据当前知识库检索到的证据：\n- P0 and P1 incidents require human confirmation before sending notifications or creating incident tickets. [1]\n- P0 and P1 incidents require human confirmation before sending notifications or creating incident tickets. [2]\n- Enterprise customers with P1 incidents receive an initial response within 30 minutes. [3]\n\n提示：当前为 Demo Mode，mock embedding 仅用于流程演示，不代表真实语义检索质量。",
+      "retrieved_chunks": "chunk_8b11d2592085, chunk_60e2acf6ebcd, chunk_517830547568, chunk_2156a0ffd786, chunk_b8b1c350f843",
+      "score": 1.0,
+      "status": "pass",
+      "failure_reason": "",
+      "trace_id": "trace_124399f49df8"
+    },
+    {
+      "question": "When is rollback approval required?",
+      "expected_answer": "incident commander",
+      "expected_sources": "ops_runbook.md",
+      "actual_answer": "根据当前知识库检索到的证据：\n- P1 incidents target workaround or resolution within 8 business hours when the issue is reproducible. [1]\n- P1 incidents target workaround or resolution within 8 business hours when the issue is reproducible. [2]\n- Rollback requires approval from the incident commander. [3]\n\n提示：当前为 Demo Mode，mock embedding 仅用于流程演示，不代表真实语义检索质量。",
+      "retrieved_chunks": "chunk_517830547568, chunk_2156a0ffd786, chunk_8b11d2592085, chunk_60e2acf6ebcd, chunk_b8b1c350f843",
+      "score": 1.0,
+      "status": "pass",
+      "failure_reason": "",
+      "trace_id": "trace_95b0e291230d"
+    },
+    {
+      "question": "What does the quarterly revenue brief discuss?",
+      "expected_answer": "quarterly revenue",
+      "expected_sources": "quarterly_revenue_brief.md",
+      "actual_answer": "根据当前知识库检索到的证据：\n- The workbench combines Knowledge RAG, Workflow Agent, Data Analyst Agent, Evaluation Center, and Observability. [1]\n- The workbench combines Knowledge RAG, Workflow Agent, Data Analyst Agent, Evaluation Center, and Observability. [2]\n- P1 incidents target workaround or resolution within 8 business hours when the issue is reproducible. [3]\n\n提示：当前为 Demo Mode，mock embedding 仅用于流程演示，不代表真实语义检索质量。",
+      "retrieved_chunks": "chunk_b8b1c350f843, chunk_cfd8e3880747, chunk_517830547568, chunk_2156a0ffd786, chunk_8b11d2592085",
+      "score": 0.2,
+      "status": "fail",
+      "failure_reason": "missing expected source or answer term",
+      "trace_id": "trace_2c31160984d7"
+    }
+  ],
+  "created_at": "2026-05-07T14:50:04+00:00"
+}

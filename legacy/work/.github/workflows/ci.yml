@@ -1,0 +1,31 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Initialize demo data
+        run: python scripts/init_platform.py
+      - name: Run tests
+        run: pytest -q
+      - name: Run final acceptance
+        env:
+          AUTH_ENABLED: "false"
+          API_KEY: test-key
+          API_BASE_URL: http://127.0.0.1:8765
+        run: |
+          python -u scripts/run_api.py > /tmp/unified-api.log 2>&1 &
+          python scripts/final_acceptance_check.py
+      - name: Show API logs on failure
+        if: failure()
+        run: cat /tmp/unified-api.log

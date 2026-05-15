@@ -1,0 +1,99 @@
+version: 1
+active_profile: balanced
+target_avg_latency_ms: 500
+target_p95_latency_ms: 1500
+target_cost_per_1k_chunks: 0.02
+target_storage_mb_per_1k_chunks: 6.0
+retrieval_quality:
+  label: Retrieval Quality
+  weight: 55
+  metrics:
+    recall_at_5:
+      weight: 18
+      description: Whether top 5 results recall the expected evidence.
+    ndcg_at_10:
+      weight: 14
+      description: Whether relevant evidence is ranked near the top.
+    mrr_at_10:
+      weight: 10
+      description: Rank of the first relevant evidence.
+    hit_at_1:
+      weight: 7
+      description: Whether the first result directly hits expected evidence.
+    precision_at_5:
+      weight: 6
+      description: Share of relevant results in top 5.
+semantic_separation:
+  label: Semantic Separation
+  weight: 15
+  metrics:
+    pair_accuracy:
+      weight: 5
+      description: Positive pairs should score higher than negative pairs.
+    hard_negative_margin:
+      weight: 7
+      description: Separates near but semantically different business concepts.
+    score_distribution_quality:
+      weight: 3
+      description: Positive and negative score distributions should be separable.
+rag_context_quality:
+  label: RAG Context Quality
+  weight: 15
+  metrics:
+    context_recall:
+      weight: 5
+      description: Required evidence is included in final context.
+    context_precision:
+      weight: 5
+      description: Final context is concise and low noise.
+    citation_support_rate:
+      weight: 5
+      description: Citations support the answer and are system-generated.
+engineering_quality:
+  label: Engineering Quality
+  weight: 15
+  metrics:
+    avg_latency_score:
+      weight: 5
+      description: Average embedding and retrieval latency.
+    p95_latency_score:
+      weight: 3
+      description: Tail latency.
+    cost_score:
+      weight: 3
+      description: API or local inference cost.
+    storage_score:
+      weight: 2
+      description: Storage cost from embedding dimension and chunk count.
+    stability_score:
+      weight: 2
+      description: Failure rate, timeout rate, NaN/Inf and dimension stability.
+profiles:
+  balanced:
+    description: Default enterprise RAG profile.
+    weights:
+      retrieval_quality: 55
+      semantic_separation: 15
+      rag_context_quality: 15
+      engineering_quality: 15
+  quality_first:
+    description: Prioritizes retrieval quality for production launch.
+    weights:
+      retrieval_quality: 65
+      semantic_separation: 15
+      rag_context_quality: 15
+      engineering_quality: 5
+  cost_first:
+    description: Prioritizes cost and storage control.
+    weights:
+      retrieval_quality: 45
+      semantic_separation: 10
+      rag_context_quality: 15
+      engineering_quality: 30
+  custom_quality:
+    description: test profile
+    weights:
+      retrieval_quality: 60.0
+      semantic_separation: 15.0
+      rag_context_quality: 15.0
+      engineering_quality: 10.0

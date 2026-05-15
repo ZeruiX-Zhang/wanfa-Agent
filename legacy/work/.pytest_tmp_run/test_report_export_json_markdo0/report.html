@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>Embedding 模型评分报告</title>
+  <style>
+    body { font-family: Arial, "Microsoft YaHei", sans-serif; margin: 32px; color: #1f2933; }
+    .bar { width: 100%; height: 18px; background: #e5e7eb; border-radius: 8px; overflow: hidden; }
+    .fill { width: 80%; height: 100%; background: #2f80ed; }
+    table { border-collapse: collapse; width: 100%; margin-top: 16px; font-size: 13px; }
+    th, td { border: 1px solid #d8dee9; padding: 8px; text-align: left; vertical-align: top; }
+    th { background: #f3f6fb; }
+    .score { font-size: 28px; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <h1>Embedding 模型评分报告: BAAI/bge-m3</h1>
+  <div class="score">80 / 100 Good</div>
+  <div class="bar"><div class="fill"></div></div>
+  <p>BAAI/bge-m3 在当前知识库测试集中综合评分为 80/100，等级 Good。优势在 Score Distribution Quality、Storage / 1k chunks，说明相关证据召回或工程表现较稳。短板是 Hard Negative Margin、Cost / 1k chunks，建议增加容易混淆的 hard negative 测试，如退款流程与退货规则。</p>
+  <h2>子评分</h2>
+  <ul>
+    <li>检索质量: 80</li>
+    <li>语义区分度: 77</li>
+    <li>RAG 上下文质量: 80</li>
+    <li>工程可用性: 84</li>
+  </ul>
+  <h2>指标表格</h2>
+  <table>
+    <thead><tr><th>指标</th><th>当前值</th><th>归一化分数</th><th>权重</th><th>加权得分</th><th>判断</th><th>解释</th><th>建议</th></tr></thead>
+    <tbody><tr><td>Recall@5</td><td>0.86</td><td>86</td><td>18.00</td><td>15.48</td><td>Excellent</td><td>Whether top 5 results recall the expected evidence.</td><td>补充业务问法、检查切片粒度，必要时开启 hybrid retrieval。</td></tr>
+<tr><td>nDCG@10</td><td>0.79</td><td>79</td><td>14.00</td><td>11.06</td><td>Good</td><td>Whether relevant evidence is ranked near the top.</td><td>增加 reranker，或优化 query rewrite 和标题 metadata。</td></tr>
+<tr><td>MRR@10</td><td>0.78</td><td>78</td><td>10.00</td><td>7.80</td><td>Good</td><td>Rank of the first relevant evidence.</td><td>提升首个正确证据排名，可加入 rerank 和 hard negative cases。</td></tr>
+<tr><td>Hit@1</td><td>0.72</td><td>72</td><td>7.00</td><td>5.04</td><td>Usable</td><td>Whether the first result directly hits expected evidence.</td><td>强化高价值 FAQ、术语同义词和标题路径。</td></tr>
+<tr><td>Precision@5</td><td>0.74</td><td>74</td><td>6.00</td><td>4.44</td><td>Usable</td><td>Share of relevant results in top 5.</td><td>降低噪声 chunk，收紧过滤条件或提高 rerank 权重。</td></tr>
+<tr><td>Pair Accuracy</td><td>0.88</td><td>88</td><td>5.00</td><td>4.40</td><td>Excellent</td><td>Positive pairs should score higher than negative pairs.</td><td>补充正负样本对，覆盖核心业务概念。</td></tr>
+<tr><td>Hard Negative Margin</td><td>0.09</td><td>60</td><td>7.00</td><td>4.20</td><td>Usable</td><td>Separates near but semantically different business concepts.</td><td>增加容易混淆的 hard negative 测试，如退款流程与退货规则。</td></tr>
+<tr><td>Score Distribution Quality</td><td>distribution score 100</td><td>100</td><td>3.00</td><td>3.00</td><td>Excellent</td><td>Positive and negative score distributions should be separable.</td><td>检查相似度分布，补充更真实的负样本和近义业务问题。</td></tr>
+<tr><td>Context Recall</td><td>0.80</td><td>80</td><td>5.00</td><td>4.00</td><td>Good</td><td>Required evidence is included in final context.</td><td>提高 top_k、优化切片和召回融合策略。</td></tr>
+<tr><td>Context Precision</td><td>0.78</td><td>78</td><td>5.00</td><td>3.90</td><td>Good</td><td>Final context is concise and low noise.</td><td>减少过长 chunk，过滤重复内容，启用 rerank。</td></tr>
+<tr><td>Citation Support Rate</td><td>0.83</td><td>83</td><td>5.00</td><td>4.15</td><td>Good</td><td>Citations support the answer and are system-generated.</td><td>检查 citation formatter 和 chunk metadata，避免引用不支持答案。</td></tr>
+<tr><td>Avg Latency</td><td>620ms</td><td>81</td><td>5.00</td><td>4.03</td><td>Good</td><td>Average embedding and retrieval latency.</td><td>调大 batch，使用本地缓存或更快的 embedding provider。</td></tr>
+<tr><td>P95 Latency</td><td>1700ms</td><td>88</td><td>3.00</td><td>2.65</td><td>Excellent</td><td>Tail latency.</td><td>检查长尾请求、超时重试和并发批处理。</td></tr>
+<tr><td>Cost / 1k chunks</td><td>0.0300</td><td>67</td><td>3.00</td><td>2.00</td><td>Usable</td><td>API or local inference cost.</td><td>降低 API 调用量，缓存 embedding，或改用本地模型。</td></tr>
+<tr><td>Storage / 1k chunks</td><td>3.91 MB</td><td>100</td><td>2.00</td><td>2.00</td><td>Excellent</td><td>Storage cost from embedding dimension and chunk count.</td><td>控制维度和 chunk 数，按 collection 做生命周期管理。</td></tr>
+<tr><td>Stability</td><td>2.0% failure</td><td>98</td><td>2.00</td><td>1.96</td><td>Excellent</td><td>Failure rate, timeout rate, NaN/Inf and dimension stability.</td><td>排查失败率、超时、NaN/Inf 和维度不一致问题。</td></tr></tbody>
+  </table>
+  <h2>模型对比</h2>
+  <table>
+    <thead><tr><th>模型</th><th>Provider</th><th>维度</th><th>综合评分</th><th>等级</th><th>推荐用途</th></tr></thead>
+    <tbody><tr><td>BAAI/bge-m3</td><td>local_bge</td><td>1024</td><td>80</td><td>Good</td><td>企业知识库试运行</td></tr></tbody>
+  </table>
+  <h2>风险提示</h2>
+  <ul><li>当前未发现阻断性风险，仍建议用真实业务 eval set 复测。</li></ul>
+  <h2>推荐动作</h2>
+  <p>适合大多数企业知识库场景，可进入试运行。建议继续优化 Hard Negative Margin 和 Cost / 1k chunks。</p>
+</body>
+</html>

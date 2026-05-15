@@ -1,0 +1,26 @@
+{
+  "name": "reality-os",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Controlled monorepo consolidation workspace for Reality OS.",
+  "scripts": {
+    "doctor": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check-phase12.ps1",
+    "doctor:phase2": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check-phase2.ps1",
+    "doctor:phase3": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check-phase3.ps1",
+    "doctor:phase12": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check-phase12.ps1",
+    "api:smoke": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/api-smoke.ps1",
+    "smoke:phase10": "python -m services.evals.smoke",
+    "web:e2e": "npm --prefix apps/web run e2e",
+    "web:build:strict": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$env:REALITY_OS_ADAPTER_MODE='strict'; npm --prefix apps/web run build\"",
+    "web:dev": "npm --prefix apps/web run dev",
+    "web:build": "npm --prefix apps/web run build",
+    "web:lint": "npm --prefix apps/web run lint",
+    "legacy:list": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-legacy.ps1 -Target all",
+    "legacy:sou:backend": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-legacy.ps1 -Target sou-backend",
+    "legacy:sou:web": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-legacy.ps1 -Target sou-web",
+    "legacy:prompt:backend": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-legacy.ps1 -Target prompt-backend",
+    "legacy:prompt:desktop": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-legacy.ps1 -Target prompt-desktop",
+    "legacy:work:api": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-legacy.ps1 -Target work-api",
+    "legacy:work:desktop": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-legacy.ps1 -Target work-desktop"
+  }
+}

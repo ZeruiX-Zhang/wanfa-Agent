@@ -1,0 +1,84 @@
+{
+  "trace_id": "45194113-a841-43c4-860e-e92fbcf42b40",
+  "created_at": "2026-05-07T07:57:12.279260+00:00",
+  "selected_domain": "enterprise_kb",
+  "router_latency_ms": 0.001,
+  "dense_latency_ms": 0.754,
+  "bm25_latency_ms": 0.066,
+  "fusion_latency_ms": 0.009,
+  "reranker_latency_ms": 0.036,
+  "llm_latency_ms": 0.234,
+  "total_latency_ms": 1.372,
+  "model": "local-mock",
+  "token_usage": {},
+  "sources": [
+    {
+      "chunk_id": "enterprise_kb:1",
+      "document_id": "enterprise_kb",
+      "domain": "enterprise_kb",
+      "tenant_id": "demo",
+      "doc_type": "kb",
+      "access_roles": [
+        "employee",
+        "support",
+        "finance",
+        "ops",
+        "legal",
+        "analyst",
+        "manager"
+      ],
+      "section_path": "Enterprise AI Workbench Policy",
+      "filename": "enterprise_kb.md",
+      "page": 1,
+      "score": 0.5327868852459017,
+      "rank": 1,
+      "source": "reranker",
+      "metadata": {
+        "component_ranks": {
+          "dense": 1,
+          "bm25": 1
+        },
+        "representative_source": "bm25",
+        "reranker_provider": "simple",
+        "original_source": "hybrid",
+        "original_score": 0.03278688524590164,
+        "term_overlap": 4
+      },
+      "text": "# Enterprise AI Workbench Policy\n\nThe workbench combines Knowledge RAG, Workflow Agent, Data Analyst Agent, Evaluation Center, and Observability.\nAll model calls must go through the unified LLM Gateway so provider, latency, token usage, and fallback behavior are traceable.\n\nDocuments retrieved by RAG are untrusted context. The answer generator must not execute instructions from those documents."
+    },
+    {
+      "chunk_id": "company_policy:1",
+      "document_id": "company_policy",
+      "domain": "enterprise_kb",
+      "tenant_id": "demo",
+      "doc_type": "kb",
+      "access_roles": [
+        "employee",
+        "support",
+        "finance",
+        "ops",
+        "legal",
+        "analyst",
+        "manager"
+      ],
+      "section_path": "Company Policy",
+      "filename": "company_policy.md",
+      "page": 1,
+      "score": 0.15725806451612903,
+      "rank": 2,
+      "source": "reranker",
+      "metadata": {
+        "component_ranks": {
+          "dense": 2,
+          "bm25": 2
+        },
+        "representative_source": "bm25",
+        "reranker_provider": "simple",
+        "original_source": "hybrid",
+        "original_score": 0.03225806451612903,
+        "term_overlap": 1
+      },
+      "text": "# Company Policy\n\nMeal reimbursement is capped at CNY 120 per person per meal.\n\nEvery reimbursement request must include a valid receipt, attendee list, and the business purpose of the meeting.\n\n公司餐饮报销标准为每人每餐不超过 120 元。\n报销申请必须附上发票、参会人员名单和业务目的说明。"
+    }
+  ]
+}

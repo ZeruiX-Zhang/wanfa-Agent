@@ -1,0 +1,152 @@
+{
+  "trace_id": "d7b4d32d-295c-4a10-a4a9-19a76e448fde",
+  "created_at": "2026-05-07T04:41:01.003152+00:00",
+  "selected_domain": "finance_research",
+  "router_latency_ms": 0.001,
+  "dense_latency_ms": 0.914,
+  "bm25_latency_ms": 0.102,
+  "fusion_latency_ms": 0.016,
+  "reranker_latency_ms": 0.057,
+  "llm_latency_ms": 0.02,
+  "total_latency_ms": 1.393,
+  "model": "local-mock",
+  "token_usage": {},
+  "sources": [
+    {
+      "chunk_id": "quarterly_revenue_brief:2",
+      "document_id": "quarterly_revenue_brief",
+      "domain": "finance_research",
+      "tenant_id": "demo",
+      "doc_type": "kb",
+      "access_roles": [
+        "employee",
+        "support",
+        "finance",
+        "ops",
+        "legal",
+        "analyst",
+        "manager"
+      ],
+      "section_path": "paragraph-2",
+      "filename": "quarterly_revenue_brief.md",
+      "page": 2,
+      "score": 0.43252247488101536,
+      "rank": 1,
+      "source": "reranker",
+      "metadata": {
+        "component_ranks": {
+          "dense": 2,
+          "bm25": 1
+        },
+        "representative_source": "bm25",
+        "reranker_provider": "simple",
+        "original_source": "hybrid",
+        "original_score": 0.03252247488101534,
+        "term_overlap": 4
+      },
+      "text": "The 2025 structured finance dataset shows quarter-over-quarter revenue expansion across East China, North China, and South China."
+    },
+    {
+      "chunk_id": "quarterly_revenue_brief:1",
+      "document_id": "quarterly_revenue_brief",
+      "domain": "finance_research",
+      "tenant_id": "demo",
+      "doc_type": "kb",
+      "access_roles": [
+        "employee",
+        "support",
+        "finance",
+        "ops",
+        "legal",
+        "analyst",
+        "manager"
+      ],
+      "section_path": "paragraph-1",
+      "filename": "quarterly_revenue_brief.md",
+      "page": 1,
+      "score": 0.33252247488101533,
+      "rank": 2,
+      "source": "reranker",
+      "metadata": {
+        "component_ranks": {
+          "dense": 1,
+          "bm25": 2
+        },
+        "representative_source": "bm25",
+        "reranker_provider": "simple",
+        "original_source": "hybrid",
+        "original_score": 0.03252247488101534,
+        "term_overlap": 3
+      },
+      "text": "# 2025 Quarterly Revenue Brief"
+    },
+    {
+      "chunk_id": "quarterly_revenue_brief:3",
+      "document_id": "quarterly_revenue_brief",
+      "domain": "finance_research",
+      "tenant_id": "demo",
+      "doc_type": "kb",
+      "access_roles": [
+        "employee",
+        "support",
+        "finance",
+        "ops",
+        "legal",
+        "analyst",
+        "manager"
+      ],
+      "section_path": "paragraph-3",
+      "filename": "quarterly_revenue_brief.md",
+      "page": 3,
+      "score": 0.23174603174603176,
+      "rank": 3,
+      "source": "reranker",
+      "metadata": {
+        "component_ranks": {
+          "dense": 3,
+          "bm25": 3
+        },
+        "representative_source": "bm25",
+        "reranker_provider": "simple",
+        "original_source": "hybrid",
+        "original_score": 0.031746031746031744,
+        "term_overlap": 2
+      },
+      "text": "- 2025Q1 revenue baseline: East China 1.20M, North China 0.98M, South China 1.10M.\n- 2025Q2 revenue: East China 1.45M, North China 1.21M, South China 1.39M.\n- 2025Q3 revenue: East China 1.62M, North China 1.30M, South China 1.70M.\n- Gross margin improves from 0.39-0.42 in Q1 to 0.41-0.46 in Q3.\n- South China posts the strongest Q1-to-Q3 revenue growth, while East China remains the largest revenue base."
+    },
+    {
+      "chunk_id": "quarterly_revenue_brief:4",
+      "document_id": "quarterly_revenue_brief",
+      "domain": "finance_research",
+      "tenant_id": "demo",
+      "doc_type": "kb",
+      "access_roles": [
+        "employee",
+        "support",
+        "finance",
+        "ops",
+        "legal",
+        "analyst",
+        "manager"
+      ],
+      "section_path": "paragraph-4",
+      "filename": "quarterly_revenue_brief.md",
+      "page": 4,
+      "score": 0.13125,
+      "rank": 4,
+      "source": "reranker",
+      "metadata": {
+        "component_ranks": {
+          "dense": 4,
+          "bm25": 4
+        },
+        "representative_source": "bm25",
+        "reranker_provider": "simple",
+        "original_source": "hybrid",
+        "original_score": 0.03125,
+        "term_overlap": 1
+      },
+      "text": "2025 年结构化财务样例显示，华东、华北、华南三个区域的营收按季度持续增长。\n华南在 Q1 到 Q3 之间的营收增幅最高，华东保持最大营收体量，毛利率也从 Q1 的 0.39-0.42 提升到 Q3 的 0.41-0.46。"
+    }
+  ]
+}

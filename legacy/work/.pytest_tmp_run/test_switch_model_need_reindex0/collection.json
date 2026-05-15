@@ -1,0 +1,11 @@
+{
+  "collection_name": "enterprise_kb_demo",
+  "embedding_model_id": "bge_m3",
+  "provider": "local_bge",
+  "dimension": 1024,
+  "distance_metric": "cosine",
+  "normalize_embeddings": true,
+  "created_at": "2026-05-07T00:00:00Z",
+  "chunk_count": 10,
+  "doc_count": 2
+}

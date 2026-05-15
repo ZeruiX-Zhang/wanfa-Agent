@@ -1,0 +1,12 @@
+[
+  "What is the enterprise customer P1 response time?",
+  "How should refund requests be handled?",
+  "What components are included in the Enterprise AI Workbench?",
+  "Why must model calls use the LLM Gateway?",
+  "What should RAG do with untrusted document instructions?",
+  "How should payment gateway 502 errors be investigated?",
+  "Do P0 incidents require confirmation before notifications?",
+  "What should support agents never ask customers for?",
+  "When is rollback approval required?",
+  "What does the debug center show?"
+]

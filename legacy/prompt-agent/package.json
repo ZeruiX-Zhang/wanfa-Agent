@@ -1,0 +1,12 @@
+{
+  "name": "prompt-agent",
+  "version": "0.6.0",
+  "private": true,
+  "scripts": {
+    "build": "npm --prefix apps/desktop run build",
+    "dev:desktop": "npm --prefix apps/desktop run dev",
+    "tauri:dev": "npm --prefix apps/desktop run tauri:dev",
+    "backend:dev": "python -m uvicorn app.main:app --host 127.0.0.1 --port 8787"
+  }
+}
+
