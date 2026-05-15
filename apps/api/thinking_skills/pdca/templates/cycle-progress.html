@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-theme="dark">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PDCA 循环进度</title>
+<title>PDCA Progress</title>
 <style>
-:root{--bg:#1a1a2e;--surface:#16213e;--text:#e8e8e8;--accent:#4fc3f7;--warning:#ff9800;--success:#66bb6a;--border:#2a2a4a}
-[data-theme="light"]{--bg:#f8f9fa;--surface:#fff;--text:#1a1a2e;--accent:#0277bd;--warning:#e65100;--success:#2e7d32;--border:#e0e0e0}
+:root{--bg:#1a1a2e;--surface:#16213e;--text:#e8e8e8;--accent:#4fc3f7;--border:#2a2a4a}
+[data-theme="light"]{--bg:#f8f9fa;--surface:#fff;--text:#1a1a2e;--accent:#0277bd;--border:#e0e0e0}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);padding:2rem;max-width:720px;margin:0 auto;line-height:1.6}
 h1{font-size:1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:.5rem}
@@ -14,10 +14,8 @@ h1{font-size:1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:.5r
 .quadrant{padding:1rem;background:var(--surface);border-radius:8px;border:2px solid var(--border);transition:border-color .2s}
 .quadrant.active{border-color:var(--accent);box-shadow:0 0 12px rgba(79,195,247,.2)}
 .q-header{display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem}
-.q-icon{font-size:1.2rem}
 .q-label{font-weight:700;font-size:.85rem;text-transform:uppercase;letter-spacing:.05em}
 .quadrant.active .q-label{color:var(--accent)}
-.q-content{font-size:.9rem;opacity:.85}
 .q-items{margin-top:.4rem;font-size:.85rem}
 .q-items div{padding:.2rem 0}
 .iteration{margin-top:1rem;padding:1rem;background:var(--surface);border-radius:8px;text-align:center;font-size:.85rem;color:var(--accent)}
@@ -25,30 +23,30 @@ h1{font-size:1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:.5r
 </style>
 </head>
 <body>
-<button class="theme-toggle" onclick="toggleTheme()">🌓</button>
-<h1>🔄 PDCA 循环</h1>
+<button class="theme-toggle" onclick="toggleTheme()">Theme</button>
+<h1>PDCA Cycle</h1>
 <div class="cycle-grid" id="cycle"></div>
 <div id="iteration"></div>
 
 <script>
 const data = window.__THINKING_MODEL_DATA__ || {
-  current_phase:"do",
+  current_step:"do",
   iteration:2,
-  phases:{
-    plan:{label:"Plan 计划",icon:"📋",items:["目标：客服首次响应时间 < 2 分钟","措施：引入智能分流 + 增加早班人手"]},
-    do:{label:"Do 执行",icon:"⚡",items:["已部署智能分流规则","早班增加 2 人，运行第 3 天"]},
-    check:{label:"Check 检查",icon:"📊",items:["当前首次响应 1 分 48 秒","用户满意度 +8%"]},
-    act:{label:"Act 处理",icon:"🔧",items:["分流规则纳入 SOP","下一轮目标：解决率 > 85%"]}
+  steps:{
+    plan:{label:"Plan",icon:"P",items:["Target: first response under 2 minutes","Change: introduce triage rules"]},
+    do:{label:"Do",icon:"D",items:["Deploy triage rule draft","Run for 3 days"]},
+    check:{label:"Check",icon:"C",items:["Current first response: 1 min 48 sec","Satisfaction: +8%"]},
+    act:{label:"Act",icon:"A",items:["Promote rule to SOP","Next target: resolution rate above 85%"]}
   }
 };
 
 const grid = document.getElementById('cycle');
 ['plan','do','check','act'].forEach(key => {
-  const p = data.phases[key];
-  const active = data.current_phase === key ? ' active' : '';
-  grid.innerHTML += `<div class="quadrant${active}"><div class="q-header"><span class="q-icon">${p.icon}</span><span class="q-label">${p.label}</span></div><div class="q-items">${p.items.map(i=>`<div>• ${i}</div>`).join('')}</div></div>`;
+  const item = data.steps[key];
+  const active = data.current_step === key ? ' active' : '';
+  grid.innerHTML += `<div class="quadrant${active}"><div class="q-header"><span>${item.icon}</span><span class="q-label">${item.label}</span></div><div class="q-items">${item.items.map(text=>`<div>- ${text}</div>`).join('')}</div></div>`;
 });
-document.getElementById('iteration').innerHTML = `<div class="iteration">🔁 当前第 ${data.iteration} 轮迭代 · 活跃阶段：${data.phases[data.current_phase].label}</div>`;
+document.getElementById('iteration').innerHTML = `<div class="iteration">Iteration ${data.iteration} - active step: ${data.steps[data.current_step].label}</div>`;
 
 function toggleTheme(){const h=document.documentElement;h.dataset.theme=h.dataset.theme==='dark'?'light':'dark'}
 </script>

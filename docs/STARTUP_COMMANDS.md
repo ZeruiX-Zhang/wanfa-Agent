@@ -1,6 +1,6 @@
 # Startup Commands
 
-These commands document the legacy projects exactly as Phase 1 found them and the Phase 2 Reality OS command wrappers.
+These commands document the legacy projects and the Reality OS command wrappers.
 
 ## Reality OS Wrappers
 
@@ -11,20 +11,20 @@ cd D:\UserData\Desktop\reality-os
 .\scripts\start-legacy.ps1 -Target all
 ```
 
-Run the Phase 2 doctor:
+Run the workspace doctor:
 
 ```powershell
 cd D:\UserData\Desktop\reality-os
-.\scripts\check-phase2.ps1
+.\scripts\check-workspace.ps1
 ```
 
-Run the current Phase 12 doctor and smoke checks:
+Run the current doctor and smoke checks:
 
 ```powershell
 cd D:\UserData\Desktop\reality-os
 npm run doctor
 npm run api:smoke
-npm run smoke:phase10
+npm run smoke:evaluate
 npm run web:e2e
 ```
 

@@ -115,7 +115,7 @@ class ToolGateway:
     """Small policy gate for tool execution.
 
     The gateway never executes by itself. A trusted host must explicitly pass an
-    executor and enable execution; this keeps Phase 9 mock-safe by default.
+    executor and enable execution; this keeps tool execution mock-safe by default.
     """
 
     def __init__(self, policy: ToolPolicy | None = None, executor: Executor | None = None) -> None:

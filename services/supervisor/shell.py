@@ -17,7 +17,7 @@ from services.workflow import (
     ToolCallStatus,
     Workflow,
     WorkflowStatus,
-    build_phase_9_workflow,
+    build_supervisor_workflow,
     utc_now,
 )
 
@@ -27,10 +27,10 @@ class SupervisorShell:
     """Rollback-friendly in-memory supervisor read model.
 
     The shell does not execute tools. It exposes the state that API and web
-    adapters need for Phase 9 while keeping side effects disabled.
+    adapters need while keeping side effects disabled.
     """
 
-    workflow: Workflow = field(default_factory=build_phase_9_workflow)
+    workflow: Workflow = field(default_factory=build_supervisor_workflow)
 
     def snapshot(self) -> dict[str, Any]:
         """Return the full supervisor state as API-safe primitives."""
@@ -195,6 +195,6 @@ class SupervisorShell:
 
 
 def build_default_supervisor_snapshot() -> dict[str, Any]:
-    """Return a default Phase 9 supervisor snapshot."""
+    """Return a default supervisor snapshot."""
 
     return SupervisorShell().snapshot()

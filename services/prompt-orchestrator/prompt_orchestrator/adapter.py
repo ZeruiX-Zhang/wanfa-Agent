@@ -41,7 +41,7 @@ def build_prompt_adapter(
 
 
 class PromptOrchestratorAdapter:
-    """Small, dependency-free Phase 5 prompt adapter.
+    """Small, dependency-free prompt adapter.
 
     The adapter does not call an LLM and does not write to the formal knowledge
     base. Captured inputs are marked pending and untrusted by default.
@@ -116,7 +116,6 @@ class PromptOrchestratorAdapter:
             metadata={
                 **dict(metadata),
                 "adapter": "prompt-orchestrator",
-                "phase": "5",
                 "input_only": True,
             },
         )

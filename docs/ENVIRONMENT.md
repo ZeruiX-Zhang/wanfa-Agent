@@ -1,6 +1,6 @@
 # Environment Plan
 
-Phase 2 defines a unified environment vocabulary without changing legacy business code.
+Reality OS defines a unified environment vocabulary without changing legacy business code.
 
 ## Port Policy
 

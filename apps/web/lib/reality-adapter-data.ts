@@ -691,7 +691,7 @@ export async function getSupervisorSurface(): Promise<SupervisorSurface> {
   return {
     mode: "mock-safe",
     workflow: {
-      id: "workflow-phase-9",
+      id: "workflow-supervisor",
       name: "Judgment memo acceptance flow",
       status: "dry_run_disabled_tools",
     },

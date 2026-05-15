@@ -3,8 +3,8 @@ $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
 Push-Location $Root
 try {
-  python -c "from apps.api.main import app; assert app.title == 'Reality OS API Adapter'; assert len(app.routes) >= 20; print('[ok] api routes:', len(app.routes))"
-  python -c "from services.supervisor import build_default_supervisor_snapshot; snapshot = build_default_supervisor_snapshot(); assert snapshot['tool_calls'][0]['execution_disabled'] is True; assert len(snapshot['approvals']) >= 1; print('[ok] supervisor dry-run snapshot')"
+  py -3 -c "from apps.api.main import app; assert app.title == 'Reality OS API Adapter'; assert len(app.routes) >= 20; print('[ok] api routes:', len(app.routes))"
+  py -3 -c "from services.supervisor import build_default_supervisor_snapshot; snapshot = build_default_supervisor_snapshot(); assert snapshot['tool_calls'][0]['execution_disabled'] is True; assert len(snapshot['approvals']) >= 1; print('[ok] supervisor dry-run snapshot')"
   @'
 import os
 from fastapi.testclient import TestClient
@@ -32,7 +32,7 @@ body = secret_status.json()
 assert body["server_only"] is True
 assert body["values_exposed"] is False
 print("[ok] production auth and server-only secret status")
-'@ | python -
+'@ | py -3 -
 }
 finally {
   Pop-Location

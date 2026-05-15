@@ -1,4 +1,4 @@
-"""Mock-safe verification adapter for Phase 6 and Phase 10 flows."""
+"""Mock-safe verification adapter for Reality OS flows."""
 
 from __future__ import annotations
 

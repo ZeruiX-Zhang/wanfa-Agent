@@ -1,4 +1,4 @@
-"""CLI smoke for Phase 10 eval adapter data."""
+"""CLI smoke for eval adapter data."""
 
 from __future__ import annotations
 

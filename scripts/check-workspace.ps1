@@ -15,7 +15,7 @@ function Test-RequiredPath {
   }
 }
 
-Write-Host "Reality OS Phase 2 doctor"
+Write-Host "Reality OS workspace doctor"
 Write-Host "Root: $Root"
 
 $required = @(
@@ -24,13 +24,34 @@ $required = @(
   ".gitignore",
   "package.json",
   "scripts\start-legacy.ps1",
-  "scripts\check-phase2.ps1",
+  "scripts\api-smoke.ps1",
   "docs\ENVIRONMENT.md",
   "docs\STARTUP_COMMANDS.md",
   "docs\PROTECTED_ASSETS.md",
   "docs\LEGACY_INVENTORY.md",
-  "docs\PHASE_1_ACCEPTANCE_REPORT.md",
-  "docs\PHASE_2_ACCEPTANCE_REPORT.md",
+  "docs\PRODUCTION_READINESS.md",
+  "docs\DEPRECATED_ENTRYPOINTS.md",
+  "apps\api\main.py",
+  "apps\api\schemas.py",
+  "apps\extension\manifest.json",
+  "apps\web\package.json",
+  "apps\web\app\layout.tsx",
+  "apps\web\app\page.tsx",
+  "apps\web\components\layout-shell.tsx",
+  "apps\web\components\pending-knowledge-panel.tsx",
+  "apps\web\components\reality-adapter-ui.tsx",
+  "apps\web\lib\reality-adapter-data.ts",
+  "apps\web\playwright.config.ts",
+  "apps\web\tests\e2e\reality-flow.spec.ts",
+  "apps\web\tests\e2e\pages\reality-os-page.ts",
+  "services\knowledge\adapter.py",
+  "services\retrieval\adapter.py",
+  "services\prompt-orchestrator\prompt_orchestrator\adapter.py",
+  "services\verification\adapter.py",
+  "services\evals\smoke.py",
+  "services\workflow\schemas.py",
+  "services\supervisor\shell.py",
+  "services\tool-gateway\tool_gateway\gateway.py",
   "legacy\sou",
   "legacy\prompt-agent",
   "legacy\study",
@@ -75,6 +96,17 @@ foreach ($name in $portVariables) {
   }
   else {
     Write-Host "[missing] env var: $name"
+    $exitCode = 1
+  }
+}
+
+$packageJson = Get-Content -Raw -LiteralPath (Join-Path $Root "package.json")
+foreach ($scriptName in @("api:smoke", "smoke:evaluate", "web:e2e", "web:build:strict", "web:dev", "web:build", "web:lint")) {
+  if ($packageJson -match "`"$scriptName`"") {
+    Write-Host "[ok] root script present: $scriptName"
+  }
+  else {
+    Write-Host "[missing] root script: $scriptName"
     $exitCode = 1
   }
 }

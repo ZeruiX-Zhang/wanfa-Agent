@@ -1,4 +1,4 @@
-"""Pure Python workflow schemas for the Phase 9 supervisor shell.
+"""Pure Python workflow schemas for the supervisor shell.
 
 The module intentionally avoids framework dependencies so the API adapter can
 wrap these dataclasses later without forcing a storage or web framework choice.
@@ -186,8 +186,8 @@ def serialize(value: Any) -> Any:
     return value
 
 
-def build_phase_9_workflow() -> Workflow:
-    """Build the minimal Phase 9 supervisor shell workflow."""
+def build_supervisor_workflow() -> Workflow:
+    """Build the minimal supervisor shell workflow."""
 
     approval = ApprovalRequest(
         action="execute high-risk tool call",
@@ -206,7 +206,7 @@ def build_phase_9_workflow() -> Workflow:
     approval.tool_call_id = tool_call.id
 
     task = AgentTask(
-        title="Phase 9 supervisor shell",
+        title="Supervisor shell",
         worker="Worker 6",
         status=AgentTaskStatus.BLOCKED,
         steps=[
@@ -230,7 +230,7 @@ def build_phase_9_workflow() -> Workflow:
     )
 
     return Workflow(
-        title="Reality OS Phase 9 Agent Supervisor",
+        title="Reality OS Agent Supervisor",
         status=WorkflowStatus.BLOCKED,
         tasks=[task],
         tool_calls=[tool_call],

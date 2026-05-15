@@ -1,4 +1,4 @@
-"""Prompt orchestrator adapter surface for Reality OS Phase 5."""
+"""Prompt orchestrator adapter surface for Reality OS."""
 
 from .adapter import (
     PromptOrchestratorAdapter,

@@ -1,4 +1,4 @@
-"""Dry-run tool gateway for Reality OS Phase 9."""
+"""Dry-run tool gateway for Reality OS."""
 
 from .gateway import (
     ToolExecutionRequest,

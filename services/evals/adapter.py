@@ -1,4 +1,4 @@
-"""Evaluation adapter for Phase 10 smoke acceptance flow."""
+"""Evaluation adapter for the smoke acceptance flow."""
 
 from __future__ import annotations
 
@@ -48,7 +48,7 @@ class EvalSummary:
 
 
 class EvalAdapter:
-    """Deterministic eval adapter for the Phase 10 acceptance path."""
+    """Deterministic eval adapter for the acceptance path."""
 
     def __init__(self, verification_adapter: VerificationAdapter | None = None) -> None:
         self._verification = verification_adapter or VerificationAdapter()
@@ -57,7 +57,7 @@ class EvalAdapter:
         """Build a mock-safe end-to-end acceptance flow fixture."""
 
         flow: dict[str, object] = {
-            "flow_id": "phase-10-smoke",
+            "flow_id": "eval-smoke",
             "adapter_mode": "mock-safe",
             "user_input": "Should Reality OS keep knowledge writes pending review by default?",
             "clarification": {
@@ -96,7 +96,7 @@ class EvalAdapter:
                 ],
             },
             "memo": {
-                "id": "memo-phase-10-smoke",
+                "id": "memo-eval-smoke",
                 "decision": "Keep generated knowledge writes pending review by default.",
                 "claims": [
                     {
@@ -123,7 +123,7 @@ class EvalAdapter:
         return flow
 
     def summarize_acceptance_flow(self, flow: Mapping[str, Any]) -> EvalSummary:
-        """Evaluate whether a flow exposes required Phase 10 acceptance artifacts."""
+        """Evaluate whether a flow exposes required acceptance artifacts."""
 
         flow_id = str(flow.get("flow_id") or "unknown-flow")
         verification = self._mapping_or_empty(flow.get("verification"))

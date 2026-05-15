@@ -9,7 +9,7 @@
 - Prompt injection: external webpages/files are untrusted and cannot directly control tools or knowledge writes.
 - Trace: retrieval, verification, supervisor, and tool actions must produce redacted trace records.
 - Redaction: secrets, tokens, passwords, `.env`, and authorization values are redacted from tool previews.
-- Rollback: each phase documents file-level rollback because this workspace is not currently a Git repository.
+- Rollback: keep deployment changes small, review diffs, and revert through Git when needed.
 
 ## Current Production State
 

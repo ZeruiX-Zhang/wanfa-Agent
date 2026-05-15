@@ -1,11 +1,11 @@
 # Reality OS Scripts
 
-The scripts in this folder are Phase 2 command wrappers. They do not migrate business code.
+The scripts in this folder provide workspace checks and legacy command wrappers. They do not migrate business code.
 
 ## Doctor
 
 ```powershell
-.\scripts\check-phase2.ps1
+.\scripts\check-workspace.ps1
 ```
 
 or:

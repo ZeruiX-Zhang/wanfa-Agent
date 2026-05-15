@@ -1,6 +1,6 @@
 # Legacy Inventory
 
-Phase 1 preserves existing projects and records migration boundaries. No business logic has been rewritten.
+Reality OS preserves existing projects and records migration boundaries. No business logic has been rewritten.
 
 ## sou
 
@@ -130,7 +130,7 @@ Risks:
 
 - API port `8000` conflicts with `sou`.
 - Runtime artifacts in `workspace/` and `storage/` may be user data, not disposable cache.
-- CI/config has port and vector backend inconsistencies that need Phase 2 cleanup.
+- CI/config has port and vector backend inconsistencies that need cleanup.
 - PySide6 remains legacy until Web + Tauri reaches parity.
 
 ## prompt-rag-backup
@@ -146,7 +146,7 @@ Reusable candidates:
 
 Migration target:
 
-- No direct runtime target in Phase 1.
+- No direct runtime target.
 - Extract individual ideas only after `work` RAG and `prompt` Knowledge OS adapters are stable.
 
 Risks:

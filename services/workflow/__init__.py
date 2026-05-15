@@ -1,4 +1,4 @@
-"""Workflow schemas for the Reality OS Phase 9 supervisor shell."""
+"""Workflow schemas for the Reality OS supervisor shell."""
 
 from .schemas import (
     AgentStep,
@@ -12,7 +12,7 @@ from .schemas import (
     ToolCallStatus,
     Workflow,
     WorkflowStatus,
-    build_phase_9_workflow,
+    build_supervisor_workflow,
     new_id,
     serialize,
     utc_now,
@@ -30,7 +30,7 @@ __all__ = [
     "ToolCallStatus",
     "Workflow",
     "WorkflowStatus",
-    "build_phase_9_workflow",
+    "build_supervisor_workflow",
     "new_id",
     "serialize",
     "utc_now",

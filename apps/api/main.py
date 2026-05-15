@@ -59,7 +59,7 @@ app = FastAPI(
     title="Reality OS API Adapter",
     version="0.4.0",
     description=(
-        "Safe FastAPI adapter skeleton for Reality OS phases 4-12. "
+        "Safe FastAPI adapter skeleton for Reality OS. "
         "Legacy systems are not modified; writes are pending review or dry-run."
     ),
     dependencies=[Depends(require_api_context)],
@@ -92,12 +92,12 @@ storage = get_storage()
 
 SOURCES: list[SourceRecord] = [
     SourceRecord(
-        id="sou_src_reality_os_phase_notes",
-        title="Reality OS phase notes",
+        id="sou_src_reality_os_adapter_notes",
+        title="Reality OS adapter notes",
         origin="legacy:sou",
         uri=None,
-        summary="Read-only adapter placeholder for consolidated Reality OS phase evidence.",
-        tags=["reality-os", "phase", "adapter"],
+        summary="Read-only adapter placeholder for consolidated Reality OS evidence.",
+        tags=["reality-os", "adapter"],
     ),
     SourceRecord(
         id="sou_src_search_knowledge",
@@ -111,9 +111,9 @@ SOURCES: list[SourceRecord] = [
 
 EVIDENCE: list[EvidenceRecord] = [
     EvidenceRecord(
-        id="ev_phase_adapter_required",
+        id="ev_adapter_required",
         claim="Reality OS needs a unified adapter layer before deeper integration.",
-        source_id="sou_src_reality_os_phase_notes",
+        source_id="sou_src_reality_os_adapter_notes",
         quote="Adapter-first integration keeps legacy projects independently runnable.",
         rationale="Supports read-only legacy access and limits migration blast radius.",
     ),
@@ -132,7 +132,7 @@ INTELLIGENCE_OBJECTS: list[IntelligenceObject] = [
         title="Adapter boundary",
         object_type="architecture_note",
         summary="Expose a unified API without moving or deleting legacy systems.",
-        evidence_ids=["ev_phase_adapter_required"],
+        evidence_ids=["ev_adapter_required"],
         confidence=0.72,
     ),
     IntelligenceObject(
@@ -537,8 +537,8 @@ async def supervisor_snapshot(request: Request) -> SupervisorSnapshotResponse:
     approvals = [*APPROVALS, *storage.list_approvals(context.tenant_id)]
     tool_logs = [*TOOL_LOGS, *storage.list_tool_logs(context.tenant_id)]
     workflow = Workflow(
-        id="wf_reality_os_phase_4_12",
-        title="Reality OS phases 4-12 adapter implementation",
+        id="wf_reality_os_adapter_workflow",
+        title="Reality OS adapter implementation",
         status="planned",
         tasks=[
             AgentTask(

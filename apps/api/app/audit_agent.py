@@ -6,7 +6,7 @@ logical soundness, and structural quality.
 
 This implements the "red-blue adversarial" pattern: a fresh-context reviewer
 that cannot be influenced by sunk-cost bias or context leakage from the
-generation phase.
+generation step.
 
 Design principles:
 - Zero context: auditor sees only the output, never the input

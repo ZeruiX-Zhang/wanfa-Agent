@@ -8,8 +8,8 @@ pending-review stores.
 
 The router is deliberately a thin adapter layer: it maps between the web
 contract in :file:`apps/web/lib/types.ts` and the in-memory mock-safe data
-structures already maintained by the API module. Production persistence is a
-follow-up (see `.kiro/specs/unified-reality-os/design.md`).
+structures already maintained by the API module. Production persistence remains
+a follow-up before deployment.
 """
 
 from __future__ import annotations
@@ -127,8 +127,8 @@ class _Job(BaseModel):
 
 _SEED_SOURCES: list[_SourceRecord] = [
     _SourceRecord(
-        id="src_reality_os_phase_notes",
-        name="Reality OS phase notes",
+        id="src_reality_os_adapter_notes",
+        name="Reality OS adapter notes",
         type="custom_url",
         category="ai_news",
         url="about:blank",
@@ -143,7 +143,7 @@ _SEED_SOURCES: list[_SourceRecord] = [
         collection_mode="read_only",
         attribution_required=True,
         last_status="mock_safe",
-        metadata_={"origin": "legacy:sou", "tags": ["reality-os", "phase"]},
+        metadata_={"origin": "legacy:sou", "tags": ["reality-os", "adapter"]},
     ),
     _SourceRecord(
         id="src_search_knowledge",

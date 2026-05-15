@@ -810,7 +810,7 @@ const enUS: Dictionary = {
   "workspace.status.ready": "Shell ready",
   "workspace.status.planned": "Interface reserved",
   "workspace.status.adapter-next": "Adapter next",
-  "workspace.scope": "Phase scope",
+  "workspace.scope": "Workspace scope",
   "workspace.legacy": "Legacy sources",
   "workspace.next": "Next adapter work",
   "workspace.acceptance": "Acceptance",

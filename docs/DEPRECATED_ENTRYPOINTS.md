@@ -1,6 +1,6 @@
 # Deprecated Entrypoints
 
-Phase 11 does not delete legacy projects. It marks replaced or wrapper-only entrypoints as deprecated documentation targets.
+Reality OS does not delete legacy projects. It marks replaced or wrapper-only entrypoints as deprecated documentation targets.
 
 ## Deprecated by Adapter
 
@@ -18,4 +18,4 @@ Phase 11 does not delete legacy projects. It marks replaced or wrapper-only entr
 - `legacy/study`
 - `legacy/prompt-rag-backup`
 
-No legacy directory is deleted or moved in this phase.
+No legacy directory is deleted or moved by this document.
