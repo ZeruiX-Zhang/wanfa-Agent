@@ -433,6 +433,9 @@ def test_v2_decision_log(client: TestClient) -> None:
             "risks": ["平台 API 限制"],
             "success_metric": "30 天内获得 3 个付费试点",
             "review_date": "2026-06-12",
+            # R4.1 — `/api/v2/decisions` now requires both fields.
+            "predicted_outcome": "30 天内拿到 3 个付费试点",
+            "confidence": 0.6,
         },
     )
     assert resp.status_code == 200

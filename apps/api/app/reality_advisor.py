@@ -61,6 +61,10 @@ class AdvisorResponse:
     glossary: dict[str, str] | None  # term explanations (beginner)
     strategy_used: str  # reasoning strategy name
     strategy_reason: str  # reason for strategy selection
+    # R3.2 — additive: optional Skill Chain pointer for the active turn.
+    # ``None`` when the chain registry has no qualifying chain or the
+    # caller did not request chain selection (back-compat preserved).
+    skill_chain: dict[str, Any] | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -106,6 +110,9 @@ class RealityAdvisor:
         # Determine strategy
         strategy_used, strategy_reason = self._select_strategy(context, skill_framework)
 
+        # R3.2 — Additive: select an active Skill Chain (if registry has one).
+        skill_chain_payload = self._select_skill_chain(skill_framework)
+
         # Step 4: Call LLM with framework + user profile
         llm_advice = self._call_llm(
             question=question,
@@ -127,6 +134,7 @@ class RealityAdvisor:
             glossary=None,
             strategy_used=strategy_used,
             strategy_reason=strategy_reason,
+            skill_chain=skill_chain_payload,
         )
 
         # Step 6: Format for user level
@@ -763,6 +771,40 @@ class RealityAdvisor:
             "standard_hybrid",
             "Standard hybrid reasoning with Skill framework + LLM generation",
         )
+
+    def _select_skill_chain(
+        self, skill_framework: dict[str, Any]
+    ) -> dict[str, Any] | None:
+        """Pick an active :class:`SkillChain` for this turn (R3.2).
+
+        The pointer is purely informational at this layer — orchestration
+        decides whether to advance the chain. We pick the chain whose
+        ``problem_type`` matches the framework's first model_id, falling
+        back to ``general``. Returns ``None`` when the registry is empty.
+        """
+
+        try:
+            from . import skill_chain as chain_mod
+        except Exception:
+            return None
+        chain_mod.load_all()  # idempotent
+        chains = chain_mod.list_chains()
+        if not chains:
+            return None
+        problem_type = skill_framework.get("problem_type") or "general"
+        chain = chain_mod.select_chain(
+            problem_type=problem_type, chains=chains, context={"always": True}
+        )
+        if chain is None:
+            return None
+        state = chain_mod.initial_state(chain, {"always": True})
+        return {
+            "chain_id": state.chain_id,
+            "step_idx": state.step_idx,
+            "step_skill_id": state.step_skill_id,
+            "entry_satisfied": state.entry_satisfied,
+            "exit_satisfied": state.exit_satisfied,
+        }
 
     # ------------------------------------------------------------------
     # Query history recording

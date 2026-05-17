@@ -1,0 +1,31 @@
+id: product_strategy
+problem_type: product_strategy
+description: "产品策略链：JTBD → MECE → MVP → 决策矩阵 → SMART。"
+entry_conditions:
+  - always
+steps:
+  - skill_id: jtbd
+    entry_conditions:
+      - always
+    exit_conditions:
+      - session.has_user_job
+  - skill_id: mece
+    entry_conditions:
+      - session.has_user_job
+    exit_conditions:
+      - session.has_failure_modes
+  - skill_id: mvp
+    entry_conditions:
+      - session.has_failure_modes
+    exit_conditions:
+      - session.has_decision
+  - skill_id: decision-matrix
+    entry_conditions:
+      - session.has_decision
+    exit_conditions:
+      - session.has_decision
+  - skill_id: smart
+    entry_conditions:
+      - session.has_decision
+    exit_conditions:
+      - session.has_smart_goal

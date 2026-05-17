@@ -6,6 +6,8 @@ from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from .security import api_auth_required, current_context, require_api_context, secret_status
+from .app.feature_flags import detect_client_secret_leaks
+from .app.audit_events import SYSTEM_MISCONFIGURATION
 from .schemas import (
     AdapterMetadata,
     ApprovalDryRunRequest,
@@ -88,6 +90,39 @@ app.add_middleware(
 )
 
 storage = get_storage()
+
+
+def _enforce_server_only_secrets(env: dict[str, str] | None = None) -> None:
+    """Refuse to start if any ``REALITY_OS_*`` server secret leaks into the
+    client bundle (R15.1, R15.3). Emits a redacted audit row before raising
+    so the misconfiguration is visible after the process is restarted with
+    proper secrets.
+    """
+
+    leaks = detect_client_secret_leaks(env)
+    if not leaks:
+        return
+    try:
+        storage.audit(
+            tenant_id="system",
+            actor="startup",
+            event_type=SYSTEM_MISCONFIGURATION,
+            action="client_secret_leak",
+            risk="high",
+            metadata={"leaks": leaks, "redacted": True},
+        )
+    except Exception:
+        # Storage might not yet have an audit interface in mock mode; the
+        # raise below still prevents the process from serving traffic.
+        pass
+    raise RuntimeError(
+        "Reality OS refused to start: server-only secrets are exposed to the "
+        "client bundle. Remove the offending NEXT_PUBLIC_* mirrors before "
+        "retrying. Details: " + ", ".join(leaks)
+    )
+
+
+_enforce_server_only_secrets()
 
 
 SOURCES: list[SourceRecord] = [

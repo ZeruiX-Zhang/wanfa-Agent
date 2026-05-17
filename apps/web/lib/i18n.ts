@@ -595,6 +595,21 @@ const zhCN: Dictionary = {
   "eval.tier.amber": "需关注",
   "eval.tier.red": "危险",
   "eval.tier.unknown": "无数据",
+
+  // --- coach / rubric / skill-chain (expert-coaching-loop M1, additive) ---
+  "coach.next_action.learn": "学习",
+  "coach.next_action.practice": "练习",
+  "coach.next_action.experiment": "做实验",
+  "coach.next_action.review": "复盘",
+  "coach.next_action.awaiting_evidence": "等待证据",
+  "coach.expert_gap.title_zh": "专家差距",
+  "coach.expert_gap.title_en": "Expert gap",
+  "coach.confidence_check.prompt": "你对这个判断有多大把握？（0-100%）",
+  "coach.metacog.title": "元认知提示",
+  "coach.skill_chain.step": "技能链 · 第 {step} 步",
+  "coach.skill_chain.switch_proposed": "建议切换技能链",
+  "rubrics.list.title": "专家评分量表",
+  "rubrics.check.dry_run": "评分量表 · 仅模拟",
 };
 
 const enUS: Dictionary = {
@@ -1159,6 +1174,21 @@ const enUS: Dictionary = {
   "eval.tier.amber": "Watch",
   "eval.tier.red": "Red",
   "eval.tier.unknown": "No data",
+
+  // --- coach / rubric / skill-chain (expert-coaching-loop M1, additive) ---
+  "coach.next_action.learn": "Learn",
+  "coach.next_action.practice": "Practice",
+  "coach.next_action.experiment": "Run experiment",
+  "coach.next_action.review": "Review",
+  "coach.next_action.awaiting_evidence": "Awaiting evidence",
+  "coach.expert_gap.title_zh": "专家差距",
+  "coach.expert_gap.title_en": "Expert gap",
+  "coach.confidence_check.prompt": "How confident are you in this judgement? (0-100%)",
+  "coach.metacog.title": "Metacognition prompt",
+  "coach.skill_chain.step": "Skill chain · step {step}",
+  "coach.skill_chain.switch_proposed": "Skill-chain switch proposed",
+  "rubrics.list.title": "Expert rubrics",
+  "rubrics.check.dry_run": "Rubric check · dry-run",
 };
 
 const DICTIONARIES: Record<Language, Dictionary> = {

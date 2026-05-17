@@ -1,0 +1,36 @@
+domain: default
+version: "1.0.0"
+author: Reality OS Team
+source: docs/PRODUCTION_READINESS.md
+cited_evidence_ids: []
+dimensions:
+  - id: framing
+    weight: 0.25
+    anchors:
+      - "假设"
+      - "前提"
+      - "scope"
+      - "约束"
+  - id: evidence
+    weight: 0.25
+    anchors:
+      - "数据来源"
+      - "证据"
+      - "evidence"
+      - "样本"
+  - id: tradeoffs
+    weight: 0.25
+    anchors:
+      - "权衡"
+      - "代价"
+      - "tradeoff"
+      - "成本"
+  - id: review
+    weight: 0.25
+    anchors:
+      - "复盘"
+      - "review"
+      - "下一步"
+      - "indicator"
+examples:
+  - "好答案应包含明确的假设、引用、权衡和复盘指标。"

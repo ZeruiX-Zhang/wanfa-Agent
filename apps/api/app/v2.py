@@ -40,6 +40,7 @@ from .system_rules import (
     update_rule,
 )
 from .audit_agent import zero_context_audit
+from .feature_flags import coach_enabled as _coach_enabled
 from .orchestrator import orchestrated_ask
 from .expert_search import (
     expert_search,
@@ -191,6 +192,586 @@ async def orchestrate_ask_route(payload: _AskRequest, request: Request) -> dict[
         actor=context.user_id,
         answer_mode=payload.answer_mode,
         task_contract=effective_contract,
+    )
+
+
+# ---------------------------------------------------------------------------
+# coach turn (expert-coaching-loop, R1.3, R1.4, R1.10, R11.5)
+# ---------------------------------------------------------------------------
+
+
+from ..schemas import (  # noqa: E402  - intentional local import to avoid top churn
+    CoachTurnRequest,
+    CoachTurnResponse,
+    CoachExpertGap,
+    CoachSkillChainState,
+    CoachMetacognitionBlock,
+)
+from .adapter_metadata import make_metadata as _make_coach_metadata
+from .coaching_session import (
+    ALLOWED_TRANSITIONS as _COACH_ALLOWED,
+    ArchivedSessionWrite,
+    CoachingSessionRepo,
+    InvalidStateTransition,
+)
+
+
+def _require_coach_enabled() -> None:
+    """Gate coach routes behind ``REALITY_OS_COACH_ENABLED`` (Task 2.17).
+
+    When the flag is off the route surface is dark-launched: every
+    handler responds ``404`` with the same opaque body that a missing
+    resource would produce so a client cannot tell the difference
+    between "feature off" and "session not found" (R12.3, R10.6).
+    The check happens before any DB read so a disabled flag never
+    touches storage.
+    """
+
+    if not _coach_enabled():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="not found"
+        )
+
+
+_NEXT_ACTION_TO_STATE: dict[str, str] = {
+    # Maps the orchestrator-derived ``next_action`` onto the coaching state
+    # machine's expected target state. Mirrors design.md's
+    # "next_action 决策规则" table (R1.5 + R4.5).
+    "awaiting_evidence": "awaiting_evidence",
+    "practice": "awaiting_practice",
+    "experiment": "awaiting_experiment",
+    "review": "awaiting_review",
+    "learn": "active",
+}
+
+
+def _coach_next_prompt(answer: str, language: str) -> str:
+    """Pick the surface-level prompt the coach renders next.
+
+    Falls back to a localized stub when the orchestrator only produced a
+    scaffold (no LLM answer). The stub keeps the response shape stable so
+    web/extension clients can still render the turn.
+    """
+
+    if answer and answer.strip():
+        return answer.strip()
+    if language == "en":
+        return (
+            "What's the smallest piece of evidence you could collect next "
+            "to move this decision forward?"
+        )
+    return "为了把这个决策推进一步，你接下来能收集的最小证据是什么？"
+
+
+def _grounded_evidence_from(citations: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Project orchestrator citations to the response's grounded_evidence shape."""
+
+    grounded: list[dict[str, Any]] = []
+    for citation in citations or []:
+        grounded.append(
+            {
+                "item_id": citation.get("item_id"),
+                "title": citation.get("title", ""),
+                "snippet": citation.get("snippet", ""),
+                "url": citation.get("url"),
+                "relevance": citation.get("relevance"),
+                "quality": citation.get("quality"),
+                "external": True,
+                "trust_level": "untrusted",
+            }
+        )
+    return grounded
+
+
+def _due_practice(tenant_id: str, language: str) -> list[dict[str, Any]]:
+    """Shallow projection of ``retrieval_practice_plan`` for the coach surface.
+
+    Keeping this read-only here means the endpoint stays tenant-scoped via
+    the core's existing query (R12.2) without needing M2's mastery
+    scheduler to be live yet.
+    """
+
+    try:
+        plan = get_core().retrieval_practice_plan(
+            tenant_id=tenant_id, language=language, limit=3
+        )
+    except Exception:
+        return []
+    return list(plan)
+
+
+@router.post("/coach/turn", response_model=CoachTurnResponse)
+async def coach_turn(payload: CoachTurnRequest, request: Request) -> CoachTurnResponse:
+    """Run one coach turn (R1.3, R1.4, R1.10, R11.5).
+
+    Behavior:
+
+    * When ``session_id`` is omitted a fresh :class:`CoachingSession` is
+      created under the caller's tenant (R1.4) and returned along with
+      its id.
+    * When ``session_id`` is supplied but the session does not exist for
+      this tenant we respond ``404`` and emit no metadata about the
+      session (R1.10, R12.3).
+    * The orchestrator's ``coach_turn=True`` mode is invoked to derive
+      ``expert_gap``, ``skill_chain``, ``next_action`` and an audit row.
+    * Any state transition is persisted by *this* layer — the orchestrator
+      stays read-only over the aggregate (per design.md note).
+    * ``metadata.mode`` is ``"pending-review"`` because the turn writes a
+      ``coaching_session_state_log`` row (R11.5).
+    """
+
+    _require_coach_enabled()
+
+    context = current_context(request)
+
+    repo = CoachingSessionRepo(path=get_core().path)
+
+    if payload.session_id:
+        session = repo.get(tenant_id=context.tenant_id, session_id=payload.session_id)
+        if session is None:
+            # R1.10 — never leak that a session exists under another tenant.
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="session not found"
+            )
+        # R1.7 — archived sessions reject new coach_turn writes. We short-
+        # circuit before invoking the orchestrator so no downstream write
+        # path can silently mutate state behind the user's back.
+        if session.state == "archived":
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="session is archived",
+            )
+    else:
+        session = repo.get_or_create(
+            tenant_id=context.tenant_id,
+            user_id=context.user_id,
+            profile_id=f"prof:{context.tenant_id}",
+            actor=context.user_id,
+        )
+
+    language = _language(payload.language)
+
+    try:
+        orchestration = orchestrated_ask(
+            tenant_id=context.tenant_id,
+            question=payload.user_message,
+            language=language,
+            mode=payload.mode,
+            model_tier="flagship",
+            actor=context.user_id,
+            answer_mode="final",
+            coaching_session_id=session.id,
+            coach_turn=True,
+            user_confidence_check=payload.confidence_check,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
+
+    next_action = orchestration.get("next_action") or "learn"
+    target_state = _NEXT_ACTION_TO_STATE.get(next_action, "active")
+
+    # Persist the state transition this layer is responsible for. The
+    # orchestrator only computed it; transitions live here so the audit
+    # row is emitted in the same write path that owns the session
+    # (design.md "Security / safety" note + R13.1).
+    final_state: str = session.state
+    if target_state != session.state and target_state in _COACH_ALLOWED.get(session.state, frozenset()):
+        try:
+            updated = repo.transition(
+                tenant_id=context.tenant_id,
+                session_id=session.id,
+                to_state=target_state,  # type: ignore[arg-type]
+                reason=f"coach_turn:{next_action}",
+                actor=context.user_id,
+                payload={"next_action": next_action},
+            )
+            final_state = updated.state
+        except (InvalidStateTransition, ArchivedSessionWrite):
+            # If the transition is not legal (e.g. archived session) we
+            # touch the row instead so ``last_turn_at`` advances and the
+            # session does not get archived prematurely (R1.6).
+            repo.touch_last_turn(
+                tenant_id=context.tenant_id,
+                session_id=session.id,
+                last_action=next_action,  # type: ignore[arg-type]
+            )
+    else:
+        repo.touch_last_turn(
+            tenant_id=context.tenant_id,
+            session_id=session.id,
+            last_action=next_action,  # type: ignore[arg-type]
+        )
+
+    # Compose response payload. Optional fields stay ``None`` when the
+    # orchestrator could not derive them rather than synthesising values
+    # that would mislead the user.
+    expert_gap_data = orchestration.get("expert_gap")
+    expert_gap_model: CoachExpertGap | None = None
+    if isinstance(expert_gap_data, dict) and "expert_gap_score" in expert_gap_data:
+        try:
+            expert_gap_model = CoachExpertGap(**{
+                k: expert_gap_data.get(k)
+                for k in (
+                    "expert_gap_score",
+                    "missing_points",
+                    "rubric_id",
+                    "rubric_version",
+                    "rubric_source",
+                )
+            })
+        except Exception:
+            expert_gap_model = None
+
+    skill_chain_data = orchestration.get("skill_chain")
+    skill_chain_model: CoachSkillChainState | None = None
+    if isinstance(skill_chain_data, dict):
+        try:
+            skill_chain_model = CoachSkillChainState(**skill_chain_data)
+        except Exception:
+            skill_chain_model = None
+
+    metacog_block: CoachMetacognitionBlock | None = None
+    if payload.confidence_check is not None:
+        metacog_block = CoachMetacognitionBlock(
+            confidence_check_required=False,
+            user_confidence=payload.confidence_check,
+            system_confidence=float(orchestration.get("confidence") or 0.0),
+            questions_you_didnt_ask=[],
+        )
+
+    return CoachTurnResponse(
+        metadata=_make_coach_metadata(
+            adapter="v2.coach.turn",
+            source_system="apps:api",
+            mode="pending-review",
+            read_only=False,
+        ),
+        session_id=session.id,
+        session_state=final_state,  # type: ignore[arg-type]
+        next_prompt=_coach_next_prompt(orchestration.get("answer", ""), language),
+        grounded_evidence=_grounded_evidence_from(orchestration.get("citations", [])),
+        contradictions=list(orchestration.get("contradictions") or []),
+        due_practice=_due_practice(context.tenant_id, language),
+        expert_gap=expert_gap_model,
+        skill_chain=skill_chain_model,
+        next_action=next_action,  # type: ignore[arg-type]
+        metacognition=metacog_block,
+        audit_id=str(orchestration.get("audit_id") or ""),
+        run_id=str(orchestration.get("run_id") or ""),
+        user_confidence_check=payload.confidence_check,
+    )
+
+
+# ---------------------------------------------------------------------------
+# coach session read / archive (Task 2.14, R1.7, R12.3)
+# ---------------------------------------------------------------------------
+
+
+@router.get("/coach/sessions/{session_id}")
+async def get_coach_session(session_id: str, request: Request) -> dict[str, Any]:
+    """Read a single coaching session (R1.7 read access; R12.3 tenant-scoped 404).
+
+    Behaviour:
+
+    * Returns the session aggregate as a plain dict so clients see all the
+      documented fields (state, current_chain_id, last_turn_at, …).
+    * Cross-tenant lookups return ``404`` with the same body any
+      not-found request would receive — no metadata leakage (R1.10,
+      R12.3, R10.6).
+    * Archived sessions are still readable per R1.7 — only writes are
+      rejected.
+    * ``metadata.mode`` is ``"read-only"`` (design.md "Endpoint × mode"
+      table).
+    """
+
+    _require_coach_enabled()
+
+    context = current_context(request)
+    repo = CoachingSessionRepo(path=get_core().path)
+    session = repo.get(tenant_id=context.tenant_id, session_id=session_id)
+    if session is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="session not found"
+        )
+    return {
+        "metadata": _make_coach_metadata(
+            adapter="v2.coach.sessions.get",
+            source_system="apps:api",
+            mode="read-only",
+            read_only=True,
+        ).model_dump(),
+        "session": session.to_dict(),
+    }
+
+
+@router.post("/coach/sessions/{session_id}/archive")
+async def archive_coach_session(session_id: str, request: Request) -> dict[str, Any]:
+    """Archive a coaching session (R1.7 write-reject downstream; R13.1 audit).
+
+    Behaviour:
+
+    * Cross-tenant lookups return ``404`` (R1.10, R12.3) with no
+      metadata leakage.
+    * On success transitions the session to ``archived`` via
+      :class:`CoachingSessionRepo.transition` so the
+      ``coaching_session_state_log`` row, the
+      ``coaching_session_transition`` audit row, and the
+      ``coaching_session.archived`` audit row all land in the same
+      write (R13.1, R13.4).
+    * Already-archived sessions return ``409`` (design.md "Endpoint ×
+      mode" table — explicit conflict instead of silent idempotency).
+    * ``metadata.mode`` is ``"pending-review"`` because this write
+      appends to ``coaching_session_state_log`` (R11.5).
+    """
+
+    _require_coach_enabled()
+
+    context = current_context(request)
+    repo = CoachingSessionRepo(path=get_core().path)
+    session = repo.get(tenant_id=context.tenant_id, session_id=session_id)
+    if session is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="session not found"
+        )
+    if session.state == "archived":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="session already archived"
+        )
+    try:
+        archived = repo.transition(
+            tenant_id=context.tenant_id,
+            session_id=session_id,
+            to_state="archived",
+            reason="manual_archive",
+            actor=context.user_id,
+            payload={"trigger": "user"},
+        )
+    except InvalidStateTransition as exc:
+        # archived only flows in from declared states; any unexpected
+        # state surfaces as 409 rather than 500 so the client can react.
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail=str(exc)
+        ) from exc
+    except ArchivedSessionWrite:  # pragma: no cover — guarded above
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="session already archived"
+        )
+    return {
+        "metadata": _make_coach_metadata(
+            adapter="v2.coach.sessions.archive",
+            source_system="apps:api",
+            mode="pending-review",
+            read_only=False,
+        ).model_dump(),
+        "session": archived.to_dict(),
+    }
+
+
+# ---------------------------------------------------------------------------
+# rubrics — admin dry-run + read-only listing (Task 2.15, R2.6, R11.5)
+# ---------------------------------------------------------------------------
+
+
+from . import expert_rubric as _expert_rubric_mod  # noqa: E402
+
+
+class _RubricCheckRequest(BaseModel):
+    """Body for ``POST /api/v2/rubrics/check`` (R2.6 admin dry-run).
+
+    ``domain`` is optional — when provided we cross-check it against the
+    YAML's ``domain`` field so a payload mistakenly addressed to the
+    wrong domain is caught before publish (R2.1 + R2.5 spirit).
+    """
+
+    model_config = ConfigDict(extra="ignore")
+
+    domain: str | None = None
+    yaml_text: str = Field(min_length=1)
+
+
+@router.post("/rubrics/check")
+async def rubrics_check(payload: _RubricCheckRequest, request: Request) -> dict[str, Any]:
+    """Dry-run validate a rubric YAML body without persisting anything.
+
+    Behaviour (per design.md "Endpoint × mode" table):
+
+    * Returns ``200`` with ``valid: bool``, ``errors: list[str]`` and a
+      ``rubric`` *preview* (only when ``valid`` is true) so admins can
+      diff before opening a git PR (R2.6 deferred to git PR / CI).
+    * Never writes to disk and never mutates the loader cache —
+      ``metadata.mode = "dry-run"`` (R11.5).
+    * ``cited_evidence_ids`` are resolved against the tenant-scoped
+      ``KnowledgeCore`` so a rubric author cannot reference evidence
+      that does not exist for their tenant (R2.5).
+    """
+
+    context = current_context(request)
+
+    core = get_core()
+
+    def _resolver(evidence_id: str) -> bool:
+        # R2.5: a rubric is only valid if every cited id resolves to an
+        # existing :class:`EvidenceSnapshot` *or* :class:`KnowledgeItem`
+        # under the same tenant. We swallow exceptions per-id so a
+        # transient error against one id does not poison the whole
+        # validation.
+        try:
+            if core.get_evidence_snapshot(
+                tenant_id=context.tenant_id, snapshot_id=evidence_id
+            ) is not None:
+                return True
+        except Exception:
+            pass
+        try:
+            if core.library_get(
+                tenant_id=context.tenant_id, item_id=evidence_id
+            ) is not None:
+                return True
+        except Exception:
+            pass
+        return False
+
+    valid, errors, rubric_preview = _expert_rubric_mod.validate_yaml_text(
+        payload.yaml_text,
+        expected_domain=payload.domain,
+        evidence_resolver=_resolver,
+    )
+
+    body: dict[str, Any] = {
+        "metadata": _make_coach_metadata(
+            adapter="v2.rubrics.check",
+            source_system="apps:api",
+            mode="dry-run",
+            read_only=False,
+        ).model_dump(),
+        "valid": valid,
+        "errors": errors,
+        "rubric": (
+            _expert_rubric_mod.rubric_to_dict(rubric_preview)
+            if rubric_preview is not None
+            else None
+        ),
+    }
+    return body
+
+
+@router.get("/rubrics")
+async def rubrics_list(request: Request) -> dict[str, Any]:
+    """List every loaded rubric, including prior versions kept for
+    historical coach sessions (R2.6).
+
+    Notes:
+
+    * Read-only — declares ``metadata.mode = "read-only"`` per design's
+      "Endpoint × mode" table.
+    * Tenant-agnostic by design: rubrics are global YAML artefacts
+      (``apps/api/expert_rubrics/{domain}.yaml``), not per-tenant data
+      (R2.1, R12 unaffected).
+    * Lazily refreshes the loader cache so a freshly added domain
+      becomes visible without a process restart in dev environments.
+    * Surfaces refused rubrics so admins can see *why* a domain is
+      missing from the active set (R2.5 troubleshooting).
+    """
+
+    # Touch ``current_context`` so the standard auth middleware still runs;
+    # the value itself is unused because this endpoint is global per the
+    # design notes above.
+    current_context(request)
+
+    _expert_rubric_mod.load_all()
+
+    rubrics = _expert_rubric_mod.list_loaded()
+
+    # Group ``versions`` by domain so the UI can present per-domain
+    # version pickers (R2.6 "keep prior versions readable").
+    versions_by_domain: dict[str, list[str]] = {}
+    items: list[dict[str, Any]] = []
+    for rubric in rubrics:
+        versions_by_domain.setdefault(rubric.domain, []).append(rubric.version)
+        items.append(_expert_rubric_mod.rubric_to_dict(rubric))
+
+    refused = [
+        {"path": str(path), "reason": reason}
+        for (path, reason) in _expert_rubric_mod.refused_rubrics()
+    ]
+
+    return {
+        "metadata": _make_coach_metadata(
+            adapter="v2.rubrics.list",
+            source_system="apps:api",
+            mode="read-only",
+            read_only=True,
+        ).model_dump(),
+        "items": items,
+        "versions_by_domain": versions_by_domain,
+        "refused": refused,
+    }
+
+
+# ---------------------------------------------------------------------------
+# practice grading (expert-coaching-loop, R5.2, R11.1, R11.5, R13.2)
+# ---------------------------------------------------------------------------
+
+
+from ..schemas import (  # noqa: E402  - kept local to mirror coach-turn import block
+    PracticeGradeRequest,
+    PracticeGradeResponse,
+)
+
+
+@router.post("/practice/{concept_id}/grade", response_model=PracticeGradeResponse)
+async def practice_grade(
+    concept_id: str, payload: PracticeGradeRequest, request: Request
+) -> PracticeGradeResponse:
+    """Apply an SM-2 practice grade to a concept (R5.2, R11.1, R11.5).
+
+    Behaviour:
+
+    * Tenant scoping is enforced via :func:`current_context`; cross-tenant
+      lookups surface as ``404`` with no metadata leakage (R12.3, R10.6).
+      The actual scoping happens inside
+      :meth:`KnowledgeCore.grade_concept`, which raises ``KeyError`` when
+      ``(tenant_id, concept_id)`` does not exist.
+    * ``grade`` is validated by :class:`PracticeGradeRequest` (``0..5``);
+      out-of-range values fail Pydantic validation (HTTP 422). The
+      explicit ``ValueError`` branch below covers any defensive raise
+      from the core.
+    * On success the response carries the freshly-persisted concept and
+      ``metadata.mode = "pending-review"`` because this write appends to
+      ``mastery_history`` and emits a ``mastery_update`` audit row
+      (R11.1, R11.5, R13.2).
+    """
+
+    context = current_context(request)
+    try:
+        concept = get_core().grade_concept(
+            tenant_id=context.tenant_id,
+            concept_id=concept_id,
+            grade=payload.grade,
+            actor=context.user_id,
+        )
+    except KeyError as exc:
+        # R12.3 — same body shape as any other not-found path. We do not
+        # distinguish "concept does not exist" from "concept belongs to
+        # another tenant" so cross-tenant probes leak no information.
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="concept not found"
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
+
+    return PracticeGradeResponse(
+        metadata=_make_coach_metadata(
+            adapter="v2.practice.grade",
+            source_system="apps:api",
+            mode="pending-review",
+            read_only=False,
+        ),
+        concept=concept.to_dict(),
     )
 
 
@@ -1260,19 +1841,53 @@ async def list_reviews(request: Request, limit: int = 20) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
-class _DecisionLogRequest(BaseModel):
-    decision: str
-    reasoning: list[str] = Field(default_factory=list)
-    evidence: list[str] = Field(default_factory=list)
-    assumptions: list[str] = Field(default_factory=list)
-    risks: list[str] = Field(default_factory=list)
-    success_metric: str = ""
-    review_date: str = ""
+from ..schemas import DecisionLogCreateRequest as _DecisionLogCreateRequest  # noqa: E402
+from ..schemas import DecisionLogReviewRequest as _DecisionLogReviewRequest  # noqa: E402
+from . import calibration as _calibration  # noqa: E402
 
 
 @router.post("/decisions")
-async def create_decision(payload: _DecisionLogRequest, request: Request) -> dict[str, Any]:
+async def create_decision(
+    payload: _DecisionLogCreateRequest, request: Request
+) -> dict[str, Any]:
+    """Create a :class:`DecisionLog` with calibration prediction (R4.1, R6.3, R11.5).
+
+    Behaviour:
+
+    * Requires ``predicted_outcome`` (non-empty) and ``confidence ∈ [0, 1]``
+      (R4.1). Missing or out-of-range values return ``400`` directly so
+      every shape of "bad prediction" looks the same to the client; a
+      pure Pydantic ``Field`` constraint would surface as a 422 with a
+      different body, breaking the AC test contract.
+    * Persists the row with ``status="active"`` and a ``verdict`` field
+      reserved as empty in the JSON payload (R6.3) so a downstream
+      ``DecisionMemo`` cannot publish a verdict until the
+      ``Active_Evidence_Gathering`` loop closes.
+    * Calls :func:`calibration.record_prediction` so the prediction lands
+      in ``calibration_records`` and emits the documented
+      ``calibration_record`` audit row (R4.2, R13.3) in the same write.
+    * Wraps the returned :class:`DecisionLog` in an
+      :class:`AdapterMetadata` envelope with ``mode="pending-review"``
+      (R11.5) so clients can tell the row is awaiting review.
+    """
+
     context = current_context(request)
+
+    # R4.1 — explicit 400 on missing or out-of-range prediction fields.
+    predicted_outcome = (payload.predicted_outcome or "").strip()
+    if not predicted_outcome:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="predicted_outcome is required",
+        )
+    confidence = payload.confidence
+    if confidence is None or not (0.0 <= float(confidence) <= 1.0):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="confidence must be in [0.0, 1.0]",
+        )
+    confidence = float(confidence)
+
     log = DecisionLog(
         id=_id("dec"),
         tenant_id=context.tenant_id,
@@ -1286,14 +1901,208 @@ async def create_decision(payload: _DecisionLogRequest, request: Request) -> dic
         status="active",
         created_at=_utc(),
     )
+    # R6.3 — verdict stays empty until the evidence loop closes. We add
+    # it here on the dict so existing clients still see the same fields
+    # plus the new ``verdict`` placeholder and the prediction echo.
+    log_dict = log.to_dict()
+    log_dict["verdict"] = ""
+    log_dict["predicted_outcome"] = predicted_outcome
+    log_dict["confidence"] = confidence
+
     core = get_core()
     with core._lock, core._connect() as db:
         ensure_layers_schema(db)
         db.execute(
             "insert into decision_logs(id, tenant_id, data_json, status, created_at) values(?, ?, ?, ?, ?)",
-            (log.id, context.tenant_id, _json.dumps(log.to_dict(), ensure_ascii=False), "active", log.created_at),
+            (
+                log.id,
+                context.tenant_id,
+                _json.dumps(log_dict, ensure_ascii=False),
+                "active",
+                log.created_at,
+            ),
         )
-    return log.to_dict()
+
+    # R4.2, R13.3 — persist the prediction into ``calibration_records``
+    # and emit the ``calibration_record`` audit row. We do this *after*
+    # the decision_logs insert so a calibration row can never reference
+    # a missing ``decision_log_id``.
+    try:
+        _calibration.record_prediction(
+            core=core,
+            tenant_id=context.tenant_id,
+            decision_log_id=log.id,
+            predicted_outcome=predicted_outcome,
+            confidence=confidence,
+            actor=context.user_id,
+        )
+    except ValueError as exc:  # pragma: no cover — guarded above
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
+
+    return {
+        "metadata": _make_coach_metadata(
+            adapter="v2.decisions.create",
+            source_system="apps:api",
+            mode="pending-review",
+            read_only=False,
+        ).model_dump(),
+        **log_dict,
+    }
+
+
+def _normalize_binary_value(value: bool | int | None) -> int | None:
+    """Coerce ``binary_value`` to ``0/1`` for downstream Brier / Log loss.
+
+    JSON clients may send ``true``/``false``, ``0``/``1``, or omit the
+    field. The handler delegates "missing when required" semantics to
+    :func:`calibration.record_outcome` (which raises ``ValueError``) so
+    we keep this helper purely about coercion.
+    """
+
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return 1 if value else 0
+    return int(value)
+
+
+@router.post("/decisions/{decision_id}/review")
+async def review_decision(
+    decision_id: str,
+    payload: _DecisionLogReviewRequest,
+    request: Request,
+) -> dict[str, Any]:
+    """Record a :class:`LearningReview`-style outcome for a decision (R4.2, R4.6).
+
+    Behaviour:
+
+    * Tenant-scoped lookup; cross-tenant or unknown decision ids return
+      ``404`` with the same body any not-found path emits (R12.3,
+      R10.6) so cross-tenant probes leak no metadata.
+    * When ``binary_resolved=True`` the handler passes through to
+      :func:`calibration.record_outcome` which computes ``brier_score``
+      and ``log_loss`` from the prediction's stored confidence and the
+      ``binary_value`` ∈ {0, 1} (R4.2). When ``binary_resolved=False``
+      (R4.6) ``brier_score`` and ``log_loss`` stay ``NULL`` so the row
+      is excluded from the calibration curve and aggregate score.
+    * Updates ``decision_logs.data_json`` with the reviewed payload
+      (``actual_outcome``, ``binary_resolved``, ``binary_value``,
+      ``reviewed_at``, ``notes``) so the audit trail lives in one place
+      and clients can re-render the decision card without joining
+      against ``calibration_records``.
+    * Response ``metadata.mode == "pending-review"`` per R11.5 — the
+      review is durably stored but does not flip the decision to a
+      committed verdict yet (R6.3 keeps that gated behind the evidence
+      loop).
+    """
+
+    context = current_context(request)
+
+    # R4.2 + Pydantic — we let Pydantic validate the literal types; the
+    # only cross-field rule (binary_resolved=True ⇒ binary_value
+    # required) is enforced inside ``record_outcome`` so errors surface
+    # with consistent payloads.
+    if payload.binary_resolved and payload.binary_value is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="binary_value is required when binary_resolved=True",
+        )
+
+    binary_value = (
+        _normalize_binary_value(payload.binary_value) if payload.binary_resolved else None
+    )
+
+    core = get_core()
+    reviewed_at = _utc()
+
+    # Look up the decision_log row first so cross-tenant requests
+    # surface as 404 *before* any calibration mutation runs (R12.3).
+    with core._lock, core._connect() as db:
+        ensure_layers_schema(db)
+        row = db.execute(
+            "select data_json from decision_logs where id = ? and tenant_id = ?",
+            (decision_id, context.tenant_id),
+        ).fetchone()
+        if row is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="decision not found"
+            )
+        log_dict = _json.loads(row["data_json"])
+
+    # R4.2 / R4.6 — write the calibration outcome. ``record_outcome``
+    # raises ``LookupError`` when no prediction exists for this
+    # decision (e.g. legacy rows missing a calibration row); we surface
+    # that as 404 to mirror the decision-not-found shape rather than
+    # confuse the caller with a 500.
+    try:
+        calib_record = _calibration.record_outcome(
+            core=core,
+            tenant_id=context.tenant_id,
+            decision_log_id=decision_id,
+            binary_resolved=payload.binary_resolved,
+            binary_value=binary_value,
+            actor=context.user_id,
+        )
+    except LookupError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="no calibration prediction for decision",
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
+
+    # Persist the structured review onto the decision_log payload so
+    # the next ``GET /decisions`` reflects the updated state.
+    log_dict["actual_outcome"] = payload.actual_outcome
+    log_dict["binary_resolved"] = bool(payload.binary_resolved)
+    log_dict["binary_value"] = binary_value
+    log_dict["reviewed_at"] = reviewed_at
+    log_dict["notes"] = payload.notes
+    # ``brier_score`` / ``log_loss`` echoed back to the dict for clients
+    # that read the decision row directly.
+    log_dict["brier_score"] = calib_record.brier_score
+    log_dict["log_loss"] = calib_record.log_loss
+
+    with core._lock, core._connect() as db:
+        ensure_layers_schema(db)
+        db.execute(
+            "update decision_logs set data_json = ? where id = ? and tenant_id = ?",
+            (
+                _json.dumps(log_dict, ensure_ascii=False),
+                decision_id,
+                context.tenant_id,
+            ),
+        )
+
+    return {
+        "metadata": _make_coach_metadata(
+            adapter="v2.decisions.review",
+            source_system="apps:api",
+            mode="pending-review",
+            read_only=False,
+        ).model_dump(),
+        "decision_log_id": decision_id,
+        "brier_score": calib_record.brier_score,
+        "log_loss": calib_record.log_loss,
+        "calibration_record": {
+            "id": calib_record.id,
+            "tenant_id": calib_record.tenant_id,
+            "decision_log_id": calib_record.decision_log_id,
+            "predicted_outcome": calib_record.predicted_outcome,
+            "confidence": calib_record.confidence,
+            "binary_resolved": calib_record.binary_resolved,
+            "binary_value": calib_record.binary_value,
+            "brier_score": calib_record.brier_score,
+            "log_loss": calib_record.log_loss,
+            "created_at": calib_record.created_at,
+            "reviewed_at": calib_record.reviewed_at,
+        },
+        "decision": log_dict,
+    }
 
 
 @router.get("/decisions")

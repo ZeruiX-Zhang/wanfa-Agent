@@ -365,3 +365,182 @@ class AuditEvent(BaseModel):
 
 class AuditLogResponse(BaseModel):
     items: list[AuditEvent]
+
+
+# ---------------------------------------------------------------------------
+# Coach turn (expert-coaching-loop, R1.3, R1.4, R11.5)
+# ---------------------------------------------------------------------------
+
+
+SessionStateLiteral = Literal[
+    "active",
+    "awaiting_evidence",
+    "awaiting_practice",
+    "awaiting_experiment",
+    "awaiting_review",
+    "paused",
+    "archived",
+]
+
+NextActionLiteral = Literal[
+    "learn",
+    "practice",
+    "experiment",
+    "review",
+    "awaiting_evidence",
+]
+
+
+class CoachTurnRequest(BaseModel):
+    """Request body for ``POST /api/v2/coach/turn`` (R1.3, R1.4)."""
+
+    session_id: str | None = None
+    user_message: str = Field(min_length=1)
+    language: Literal["zh-CN", "en"] = "zh-CN"
+    mode: Literal["simple", "professional"] = "simple"
+    confidence_check: float | None = Field(default=None, ge=0.0, le=1.0)
+
+
+class CoachExpertGap(BaseModel):
+    """Expert rubric gap surfaced on the coach response (R2.3)."""
+
+    expert_gap_score: float = Field(ge=0.0, le=1.0)
+    missing_points: list[str] = Field(default_factory=list)
+    rubric_id: str
+    rubric_version: str
+    rubric_source: Literal["domain", "default"]
+
+
+class CoachSkillChainState(BaseModel):
+    """Skill-chain pointer for the active coaching turn (R3.2)."""
+
+    chain_id: str
+    step_idx: int
+    step_skill_id: str
+    entry_satisfied: bool
+    exit_satisfied: bool
+
+
+class CoachMetacognitionBlock(BaseModel):
+    """Metacognition payload (R7). Populated lightly until P2 lands."""
+
+    confidence_check_required: bool = False
+    user_confidence: float | None = None
+    system_confidence: float | None = None
+    questions_you_didnt_ask: list[str] = Field(default_factory=list)
+
+
+class CoachTurnResponse(BaseModel):
+    """Response shape for ``POST /api/v2/coach/turn`` (R1.3, R11.5)."""
+
+    metadata: AdapterMetadata
+    session_id: str
+    session_state: SessionStateLiteral
+    next_prompt: str
+    grounded_evidence: list[dict[str, Any]] = Field(default_factory=list)
+    contradictions: list[dict[str, str]] = Field(default_factory=list)
+    due_practice: list[dict[str, Any]] = Field(default_factory=list)
+    expert_gap: CoachExpertGap | None = None
+    skill_chain: CoachSkillChainState | None = None
+    next_action: NextActionLiteral
+    metacognition: CoachMetacognitionBlock | None = None
+    audit_id: str
+    run_id: str
+    user_confidence_check: float | None = None
+
+
+# ---------------------------------------------------------------------------
+# Practice grading (expert-coaching-loop, R5.2, R11.1, R11.5)
+# ---------------------------------------------------------------------------
+
+
+class PracticeGradeRequest(BaseModel):
+    """Request body for ``POST /api/v2/practice/{concept_id}/grade`` (R5.2).
+
+    The SM-2 grade is an integer in ``0..5`` (mapped to recall quality).
+    Pydantic enforces the range so out-of-band values surface as a 422
+    validation error before the endpoint runs.
+    """
+
+    grade: int = Field(ge=0, le=5)
+
+
+class PracticeGradeResponse(BaseModel):
+    """Response shape for ``POST /api/v2/practice/{concept_id}/grade``.
+
+    ``metadata.mode`` is ``"pending-review"`` because each grade appends
+    to ``mastery_history`` and emits a ``mastery_update`` audit row
+    (R5.2, R11.1, R11.5, R13.2). The full updated :class:`Concept` is
+    returned as a dict so clients can refresh their mastery view without
+    a follow-up read.
+    """
+
+    metadata: AdapterMetadata
+    concept: dict[str, Any]
+
+
+# ---------------------------------------------------------------------------
+# Decision log creation (expert-coaching-loop, R4.1, R6.3, R11.5)
+# ---------------------------------------------------------------------------
+
+
+class DecisionLogCreateRequest(BaseModel):
+    """Request body for ``POST /api/v2/decisions`` (R4.1).
+
+    The Calibration Loop (R4) requires every committed decision to carry
+    an explicit ``predicted_outcome`` and ``confidence ∈ [0, 1]`` so that
+    Brier / Log loss can be computed at review time. Both fields are
+    declared *optional* in the Pydantic shape so the endpoint handler
+    can return a uniform HTTP 400 for any of {missing, empty, out of
+    range} per R4.1 — a strict ``Field`` constraint would surface
+    different cases as 422 with a different body shape.
+
+    The other fields preserve backwards compatibility with the legacy
+    ``_DecisionLogRequest``: existing clients can keep posting
+    ``decision`` / ``reasoning`` / ``evidence`` / etc., they just need
+    to add the two new required fields.
+    """
+
+    decision: str = Field(min_length=1)
+    reasoning: list[str] = Field(default_factory=list)
+    evidence: list[str] = Field(default_factory=list)
+    assumptions: list[str] = Field(default_factory=list)
+    risks: list[str] = Field(default_factory=list)
+    success_metric: str = ""
+    review_date: str = ""
+    # R4.1 — required at runtime; validated explicitly in the handler so
+    # missing or out-of-range values surface as 400 (not Pydantic's 422).
+    predicted_outcome: str | None = None
+    confidence: float | None = None
+
+
+# ---------------------------------------------------------------------------
+# Decision log review (expert-coaching-loop, R4.2, R4.6, R11.5)
+# ---------------------------------------------------------------------------
+
+
+class DecisionLogReviewRequest(BaseModel):
+    """Request body for ``POST /api/v2/decisions/{id}/review`` (R4.2, R4.6).
+
+    Fields:
+
+    * ``actual_outcome`` — free-text description of what actually
+      happened (mirrors the user-facing review form). Persisted on
+      ``decision_logs.data_json`` so reviewers can audit the chain
+      later.
+    * ``binary_resolved`` — whether the outcome can be resolved to a
+      binary {0, 1} for Brier / Log loss computation. When ``False``
+      (R4.6) the row is persisted with ``brier_score=NULL``,
+      ``log_loss=NULL``, and excluded from the calibration curve.
+    * ``binary_value`` — ``True`` / ``1`` for "predicted outcome
+      occurred", ``False`` / ``0`` for "did not occur". Required when
+      ``binary_resolved=True`` (validated in the handler so the error
+      surfaces as 400 rather than Pydantic's 422 on a None field).
+      Accepts ``bool | int`` to be liberal with JSON inputs.
+    * ``notes`` — optional reviewer notes.
+    """
+
+    actual_outcome: str = Field(min_length=1)
+    binary_resolved: bool
+    binary_value: bool | int | None = None
+    notes: str = ""

@@ -1,0 +1,36 @@
+domain: finance
+version: "1.0.0"
+author: Reality OS Team
+source: docs/PRODUCTION_READINESS.md
+cited_evidence_ids: []
+dimensions:
+  - id: capital
+    weight: 0.25
+    anchors:
+      - "本金"
+      - "敞口"
+      - "exposure"
+      - "drawdown"
+  - id: probability
+    weight: 0.25
+    anchors:
+      - "胜率"
+      - "概率"
+      - "base rate"
+      - "expectancy"
+  - id: tax_and_fees
+    weight: 0.25
+    anchors:
+      - "税"
+      - "费用"
+      - "fees"
+      - "spread"
+  - id: review
+    weight: 0.25
+    anchors:
+      - "复盘"
+      - "review"
+      - "止损"
+      - "stop loss"
+examples:
+  - "金融决策必须给出本金、概率、费用和复盘约束。"

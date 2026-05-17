@@ -22,11 +22,27 @@ from dataclasses import dataclass, field
 from typing import Any, Literal
 
 from .knowledge_core import get_core, _utc_now_iso, _new_id, tokenize, STOPWORDS
+from . import expert_rubric as expert_rubric_mod
+from .feature_flags import expert_gap_enabled
 
 
-AuditDimension = Literal["logic", "evidence", "feasibility", "subjectivity", "completeness"]
+AuditDimension = Literal[
+    "logic",
+    "evidence",
+    "feasibility",
+    "subjectivity",
+    "completeness",
+    "expert_gap",
+]
 
-ALL_DIMENSIONS: list[AuditDimension] = ["logic", "evidence", "feasibility", "subjectivity", "completeness"]
+ALL_DIMENSIONS: list[AuditDimension] = [
+    "logic",
+    "evidence",
+    "feasibility",
+    "subjectivity",
+    "completeness",
+    "expert_gap",
+]
 
 
 @dataclass
@@ -51,6 +67,8 @@ class AuditResult:
     source: Literal["deterministic", "llm"]
     output_type: str
     audited_at: str
+    expert_gap: dict[str, Any] | None = None
+    rubric_applied: dict[str, str] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -60,6 +78,8 @@ class AuditResult:
             "source": self.source,
             "output_type": self.output_type,
             "audited_at": self.audited_at,
+            "expert_gap": self.expert_gap,
+            "rubric_applied": self.rubric_applied,
         }
 
 
@@ -70,11 +90,18 @@ def zero_context_audit(
     language: str = "zh-CN",
     dimensions: list[AuditDimension] | None = None,
     run_id: str | None = None,
+    domain: str | None = None,
+    rubric_version: str | None = None,
 ) -> AuditResult:
     """Perform a zero-context audit on any Agent output.
 
     The auditor does NOT see the original question or context.
     It only evaluates the output text itself for internal quality.
+
+    The optional ``domain`` / ``rubric_version`` parameters select which
+    Expert Rubric the new ``expert_gap`` dimension applies (R2.3, R2.6).
+    When :func:`feature_flags.expert_gap_enabled` is ``False`` the new
+    dimension is skipped and the result mirrors the legacy 5-dim shape.
     """
     if not output_text or not output_text.strip():
         return AuditResult(
@@ -87,11 +114,28 @@ def zero_context_audit(
         )
 
     dims = dimensions or ALL_DIMENSIONS
+    if "expert_gap" in dims and not expert_gap_enabled():
+        dims = [d for d in dims if d != "expert_gap"]
     issues: list[AuditIssue] = []
+
+    expert_gap_payload: dict[str, Any] | None = None
+    rubric_applied: dict[str, str] | None = None
+    if "expert_gap" in dims:
+        expert_gap_payload, rubric_applied, gap_issues = _check_expert_gap(
+            output_text, domain=domain, version=rubric_version
+        )
+        issues.extend(gap_issues)
+        # Remove from ``dims`` so the LLM/deterministic branches do not
+        # also try to audit it.
+        dims = [d for d in dims if d != "expert_gap"]
 
     # Try LLM audit first
     llm_result = _try_llm_audit(output_text, output_type, language, dims, run_id=run_id)
     if llm_result is not None:
+        llm_result.expert_gap = expert_gap_payload
+        llm_result.rubric_applied = rubric_applied
+        if expert_gap_payload is not None:
+            llm_result.issues.extend(issues)
         return llm_result
 
     # Fallback: deterministic audit
@@ -124,7 +168,56 @@ def zero_context_audit(
         source="deterministic",
         output_type=output_type,
         audited_at=_utc_now_iso(),
+        expert_gap=expert_gap_payload,
+        rubric_applied=rubric_applied,
     )
+
+
+# ---------------------------------------------------------------------------
+# Expert gap audit dimension (R2.3, Property 8)
+# ---------------------------------------------------------------------------
+
+
+def _check_expert_gap(
+    text: str,
+    *,
+    domain: str | None,
+    version: str | None,
+) -> tuple[dict[str, Any] | None, dict[str, str] | None, list[AuditIssue]]:
+    """Score the answer against the active Expert Rubric.
+
+    Returns ``(expert_gap_payload, rubric_applied, issues)``. When the
+    rubric loader refused or no rubric (not even ``default``) is available,
+    we fall back to no-op (R2.5): payload is ``None`` and no issues are
+    raised so the existing five dimensions still cover the answer.
+    """
+
+    # Lazily refresh the rubric cache the first time we run.
+    expert_rubric_mod.load_all()
+    rubric, source = expert_rubric_mod.resolve_rubric(domain, version=version)
+    if rubric is None:
+        return None, None, []
+
+    gap = expert_rubric_mod.expert_gap_score(text, rubric)
+    payload = gap.to_dict()
+    rubric_applied = {
+        "domain": rubric.domain,
+        "version": rubric.version,
+        "source": source,
+    }
+    issues: list[AuditIssue] = []
+    if gap.expert_gap_score < 0.5:
+        issues.append(
+            AuditIssue(
+                dimension="expert_gap",
+                severity="warning",
+                description=(
+                    f"answer covers only {gap.expert_gap_score:.2f} of the "
+                    f"expert rubric ({rubric.domain}@{rubric.version})"
+                ),
+            )
+        )
+    return payload, rubric_applied, issues
 
 
 # ---------------------------------------------------------------------------

@@ -21,6 +21,12 @@ def client() -> Iterator[TestClient]:
         os.environ.pop("REALITY_OS_API_AUTH_REQUIRED", None)
         os.environ.pop("REALITY_OS_API_KEY", None)
         os.environ.pop("REALITY_OS_SERVER_API_KEY", None)
+        # Coach routes are dark-launched behind ``REALITY_OS_COACH_ENABLED``
+        # (Task 2.17). The integration suite exercises the live routes so
+        # we flip the flag *on* by default; the dedicated flag test
+        # (`test_flag_coach_enabled`) uses ``monkeypatch.setenv`` to
+        # toggle it per case.
+        os.environ.setdefault("REALITY_OS_COACH_ENABLED", "true")
 
         # Reset cached singletons so they pick up the temp storage path.
         from apps.api import storage as storage_mod

@@ -1,0 +1,42 @@
+id: general_decision
+problem_type: general
+description: "通用决策的 6 步专家链：先问对问题，挖掘根因，然后定义用户工作，预演失败模式，权衡取舍，最后落到 SMART 目标。"
+entry_conditions:
+  - always
+steps:
+  - skill_id: problem-statement
+    description: "把含糊的问题表述成一个可决策的问题陈述。"
+    entry_conditions:
+      - always
+    exit_conditions:
+      - session.has_problem_statement
+  - skill_id: five-whys
+    description: "用 5 Whys 找到根因。"
+    entry_conditions:
+      - session.has_problem_statement
+    exit_conditions:
+      - session.has_root_cause
+  - skill_id: jtbd
+    description: "确认用户的工作场景与成功标准。"
+    entry_conditions:
+      - session.has_root_cause
+    exit_conditions:
+      - session.has_user_job
+  - skill_id: pre-mortem
+    description: "预演失败模式，记录假设与防御。"
+    entry_conditions:
+      - session.has_user_job
+    exit_conditions:
+      - session.has_failure_modes
+  - skill_id: decision-matrix
+    description: "把候选方案对照决策矩阵打分。"
+    entry_conditions:
+      - session.has_failure_modes
+    exit_conditions:
+      - session.has_decision
+  - skill_id: smart
+    description: "把决策落到 SMART 目标。"
+    entry_conditions:
+      - session.has_decision
+    exit_conditions:
+      - session.has_smart_goal

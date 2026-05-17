@@ -196,7 +196,12 @@ def expert_search(*, tenant_id: str, query: str, language: str = "en",
                   sources: list[str] | None = None, auto_absorb: bool = False,
                   run_id: str | None = None, actor: str = "user",
                   use_strategy_engine: bool = True,
-                  use_model_optimization: bool = True) -> dict[str, Any]:
+                  use_model_optimization: bool = True,
+                  seed_claim: str | None = None,
+                  session_id: str | None = None,
+                  coach_turn_id: str | None = None,
+                  decision_log_id: str | None = None,
+                  evidence_gathering_task_id: str | None = None) -> dict[str, Any]:
     """Execute expert search across configured domain sources.
 
     Scores results on 7 dimensions, optionally absorbs high-quality (>= 0.7).
@@ -208,18 +213,51 @@ def expert_search(*, tenant_id: str, query: str, language: str = "en",
     semantic query expansion and merges results from both original and optimized
     queries (union by URL, keeping highest score).
 
+    Active Evidence Gathering hooks (R6.1, R6.2): when ``seed_claim`` is
+    supplied, it overrides ``query`` as the actual search input (the
+    coach turn's free-form claim is generally more specific than the
+    user message), and the optional ``session_id``, ``coach_turn_id``,
+    ``decision_log_id`` and ``evidence_gathering_task_id`` are
+    propagated into the run trace metadata + response so callers
+    (notably :func:`apps.api.app.evidence_gathering.dispatch_search`)
+    can correlate the search with the originating coach turn / decision
+    when persisting ``pending_knowledge`` rows.
+
     Response includes: strategy_name, original_query, optimized_query, optimization_source.
     """
     from .trace import finish_run, record_step, start_run
     from .search_strategy import SearchStrategyEngine
 
+    # Active Evidence Gathering: ``seed_claim`` takes precedence over
+    # ``query`` because R6.1 explicitly seeds the dispatch with the
+    # coach-turn claim ("the proposition that needs evidence"), which is
+    # a tighter retrieval signal than the raw user message.
+    effective_query = (seed_claim or "").strip() or query
+
+    run_metadata: dict[str, Any] = {
+        "language": language,
+        "auto_absorb": auto_absorb,
+        "source_count": len(sources or []),
+    }
+    if seed_claim is not None:
+        run_metadata["seed_claim"] = seed_claim
+    if session_id is not None:
+        run_metadata["session_id"] = session_id
+    if coach_turn_id is not None:
+        run_metadata["coach_turn_id"] = coach_turn_id
+    if decision_log_id is not None:
+        run_metadata["decision_log_id"] = decision_log_id
+    if evidence_gathering_task_id is not None:
+        run_metadata["evidence_gathering_task_id"] = evidence_gathering_task_id
+
     run_id = run_id or start_run(
         tenant_id=tenant_id,
         user_id=actor,
         entrypoint="expert_search",
-        input_value=query,
-        metadata={"language": language, "auto_absorb": auto_absorb, "source_count": len(sources or [])},
+        input_value=effective_query,
+        metadata=run_metadata,
     )
+    query = effective_query
     core = get_core()
 
     # --- Strategy engine integration ---
@@ -408,6 +446,16 @@ def expert_search(*, tenant_id: str, query: str, language: str = "en",
                 "original_query": original_query,
                 "optimized_query_model": optimized_query_str,
                 "optimization_source": optimization_source}
+    if seed_claim is not None:
+        response["seed_claim"] = seed_claim
+    if session_id is not None:
+        response["session_id"] = session_id
+    if coach_turn_id is not None:
+        response["coach_turn_id"] = coach_turn_id
+    if decision_log_id is not None:
+        response["decision_log_id"] = decision_log_id
+    if evidence_gathering_task_id is not None:
+        response["evidence_gathering_task_id"] = evidence_gathering_task_id
     finish_run(
         run_id,
         output_value={

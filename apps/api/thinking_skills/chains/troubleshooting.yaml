@@ -1,0 +1,26 @@
+id: troubleshooting
+problem_type: troubleshooting
+description: "故障排查链：定义问题 → 鱼骨图分析 → 5 Whys 收敛根因 → PDCA 验证。"
+entry_conditions:
+  - always
+steps:
+  - skill_id: problem-statement
+    entry_conditions:
+      - always
+    exit_conditions:
+      - session.has_problem_statement
+  - skill_id: fishbone
+    entry_conditions:
+      - session.has_problem_statement
+    exit_conditions:
+      - session.has_failure_modes
+  - skill_id: five-whys
+    entry_conditions:
+      - session.has_failure_modes
+    exit_conditions:
+      - session.has_root_cause
+  - skill_id: pdca
+    entry_conditions:
+      - session.has_root_cause
+    exit_conditions:
+      - session.has_decision

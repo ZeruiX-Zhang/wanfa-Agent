@@ -1,0 +1,36 @@
+domain: technology
+version: "1.0.0"
+author: Reality OS Team
+source: docs/PRODUCTION_READINESS.md
+cited_evidence_ids: []
+dimensions:
+  - id: architecture
+    weight: 0.25
+    anchors:
+      - "可扩展"
+      - "耦合"
+      - "scalability"
+      - "boundary"
+  - id: reliability
+    weight: 0.25
+    anchors:
+      - "失败模式"
+      - "降级"
+      - "SLO"
+      - "rollback"
+  - id: security
+    weight: 0.25
+    anchors:
+      - "认证"
+      - "授权"
+      - "审计"
+      - "secrets"
+  - id: operability
+    weight: 0.25
+    anchors:
+      - "可观测"
+      - "alert"
+      - "runbook"
+      - "telemetry"
+examples:
+  - "技术决策必须覆盖架构、可靠性、安全、可运维四个维度。"

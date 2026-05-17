@@ -71,6 +71,12 @@ def orchestrated_ask(
     task_contract: dict[str, Any] | None = None,
     run_id: str | None = None,
     use_reality_advisor: bool = True,
+    coaching_session_id: str | None = None,
+    coach_turn: bool = False,
+    user_confidence_check: float | None = None,
+    decision_log_id: str | None = None,
+    evidence_storage: Any | None = None,
+    evidence_search_runner: Any = None,
 ) -> dict[str, Any]:
     """Orchestrated ask — multi-step pipeline with role isolation.
 
@@ -79,6 +85,30 @@ def orchestrated_ask(
     2. Applies rules as pre-conditions on the response
     3. Runs zero-context audit on the output
     4. Returns richer metadata about which steps ran
+
+    Coach-turn extensions (R1.9):
+        When ``coach_turn=True`` the orchestrator additionally attaches
+        ``expert_gap``, ``skill_chain``, ``next_action`` and
+        ``session_state`` to the response. ``coaching_session_id`` is
+        consulted only to look up the current session state — the
+        orchestrator does **not** persist transitions here; that is the
+        responsibility of the ``/api/v2/coach/turn`` endpoint (task 2.13)
+        once it composes the full coach payload.
+
+        For non-coach callers the new parameters are no-ops and the
+        response keeps the historical shape (back-compat preserved).
+
+    Active Evidence Gathering wiring (Task 3.14, R6.3, R6.4, R6.6):
+        When ``coach_turn=True`` and the verifier reports
+        ``confidence_band="insufficient"``, the orchestrator opens an
+        :class:`GatheringTask` seeded with the user's claim and
+        dispatches an ``expert_search`` to fill the gap (R6.1, R6.2).
+        The response surfaces ``evidence_gathering`` (the task id +
+        state) and ``verdict_allowed`` (``False`` while any linked task
+        is not ``APPROVED`` per R6.3 / R11.4). The session transitions
+        to ``awaiting_evidence`` via the snapshot ``next_action``
+        decision rule (the persistence happens in the
+        ``/api/v2/coach/turn`` endpoint per Task 2.13).
     """
 
     from .trace import finish_run, record_acceptance_check, record_audit_result, record_step, start_run
@@ -408,6 +438,97 @@ def orchestrated_ask(
     else:
         steps_log.append({"step": "audit", "status": "skipped"})
 
+    # --- Step 6b: Coach-turn extensions (R1.9) ---
+    # Compute the additional payload only when ``coach_turn=True``. Non-coach
+    # callers see the historical response shape (back-compat preserved).
+    coach_expert_gap: dict[str, Any] | None = None
+    coach_skill_chain: dict[str, Any] | None = None
+    coach_next_action: str | None = None
+    coach_session_state: str | None = None
+    coach_evidence_gathering: dict[str, Any] | None = None
+    coach_verdict_allowed: bool | None = None
+    if coach_turn:
+        # Expert gap is surfaced separately so coach clients do not have to
+        # reach into ``orchestration.audit_result`` (R2.3).
+        if audit_result is not None and audit_result.expert_gap is not None:
+            coach_expert_gap = dict(audit_result.expert_gap)
+            if audit_result.rubric_applied:
+                coach_expert_gap.setdefault(
+                    "rubric_applied", dict(audit_result.rubric_applied)
+                )
+
+        # Skill chain pointer comes from the advisor (task 2.11). When the
+        # advisor was bypassed (``use_reality_advisor=False``) we leave it
+        # ``None`` rather than synthesising a value.
+        if advisor_response is not None and advisor_response.skill_chain:
+            coach_skill_chain = dict(advisor_response.skill_chain)
+
+        # --- Active Evidence Gathering (Task 3.14, R6.1, R6.3, R6.4) ----
+        # When verification reports insufficient_evidence in this coach
+        # turn we open + dispatch a tenant-scoped gathering task and
+        # surface its id + state on the response. The verdict on any
+        # linked DecisionLog stays blocked until every task linked to
+        # the decision reaches APPROVED (R6.3 / R11.4).
+        evidence_gathering_open = False
+        if confidence_band == "insufficient":
+            (
+                coach_evidence_gathering,
+                evidence_gathering_open,
+            ) = _open_and_dispatch_evidence_gathering(
+                tenant_id=tenant_id,
+                actor=actor,
+                language=language,
+                claim=question,
+                coaching_session_id=coaching_session_id,
+                decision_log_id=decision_log_id,
+                run_id=run_id,
+                evidence_storage=evidence_storage,
+                evidence_search_runner=evidence_search_runner,
+            )
+
+        # ``verdict_allowed`` is computed against the linked decision so
+        # callers (the coach-turn endpoint, the decision-memo publisher)
+        # can refuse to publish a verdict while pending evidence
+        # remains (R6.3, R11.4).
+        if decision_log_id is not None:
+            coach_verdict_allowed = _evidence_verdict_allowed(
+                tenant_id=tenant_id,
+                decision_log_id=decision_log_id,
+            )
+        elif coach_evidence_gathering is not None:
+            # No decision log attached — the verdict gate degrades to
+            # the single-task predicate so unit tests and dry-run
+            # callers can still observe the closure (Property 15).
+            coach_verdict_allowed = (
+                coach_evidence_gathering.get("state")
+                == "approved"
+            )
+
+        # Build a SessionSnapshot from what we know about this turn, then
+        # fold in the persisted ``CoachingSession`` (if any) so the
+        # orchestrator stays usable from tests and unit harnesses without
+        # a session.
+        coach_session_state, coach_next_action = _resolve_coach_session_state(
+            tenant_id=tenant_id,
+            coaching_session_id=coaching_session_id,
+            confidence_band=confidence_band,
+            skill_chain=coach_skill_chain,
+            user_confidence_check=user_confidence_check,
+            evidence_gathering_open=evidence_gathering_open,
+        )
+        steps_log.append({
+            "step": "coach_turn",
+            "status": "applied",
+            "session_id": coaching_session_id or "",
+            "next_action": coach_next_action or "",
+            "session_state": coach_session_state or "",
+            "evidence_gathering_task_id": (
+                coach_evidence_gathering.get("task_id")
+                if coach_evidence_gathering
+                else ""
+            ),
+        })
+
     # --- Step 7: Record audit ---
     prompt_strategy = _prompt_strategy_for_tier(model_tier)
     audit_id = core._record_audit(
@@ -454,6 +575,23 @@ def orchestrated_ask(
             "audit_result": audit_result.to_dict() if audit_result else None,
         },
     }
+    if coach_turn:
+        # Additive coach-turn fields. Non-coach callers never see these
+        # keys so legacy clients (`/api/v2/orchestrate/ask`) keep their
+        # historical response shape (R1.9).
+        response["coach_turn"] = True
+        response["coaching_session_id"] = coaching_session_id
+        response["expert_gap"] = coach_expert_gap
+        response["skill_chain"] = coach_skill_chain
+        response["next_action"] = coach_next_action
+        response["session_state"] = coach_session_state
+        # Active Evidence Gathering surface (Task 3.14, R6.3, R6.4, R6.6).
+        response["evidence_gathering"] = coach_evidence_gathering
+        response["verdict_allowed"] = coach_verdict_allowed
+        if decision_log_id is not None:
+            response["decision_log_id"] = decision_log_id
+        if user_confidence_check is not None:
+            response["user_confidence_check"] = float(user_confidence_check)
     finish_run(
         run_id,
         output_value={
@@ -464,3 +602,261 @@ def orchestrated_ask(
         },
     )
     return response
+
+
+# ---------------------------------------------------------------------------
+# Coach-turn helpers (R1.9, R1.5)
+# ---------------------------------------------------------------------------
+
+
+def _resolve_coach_session_state(
+    *,
+    tenant_id: str,
+    coaching_session_id: str | None,
+    confidence_band: Literal["solid", "probable", "uncertain", "insufficient"],
+    skill_chain: dict[str, Any] | None,
+    user_confidence_check: float | None,
+    evidence_gathering_open: bool = False,
+) -> tuple[str | None, str | None]:
+    """Return ``(session_state, next_action)`` for a coach-turn response.
+
+    The orchestrator does **not** persist transitions or mutate the
+    aggregate here — that is the responsibility of the
+    ``/api/v2/coach/turn`` endpoint (task 2.13). This helper only computes
+    the read-only snapshot the response advertises so coach clients can
+    render the next prompt and route the user to the right surface
+    (R1.3, R1.5, R1.8).
+
+    When the session id is missing or the repo cannot resolve it
+    (cross-tenant, archived, or freshly created in the same request) we
+    still return a best-effort ``next_action`` derived from
+    :class:`SessionSnapshot` so unit tests and the dry-run path can
+    exercise the pipeline without first creating a session row.
+
+    ``evidence_gathering_open`` reflects whether Task 3.14's dispatch
+    actually opened a ``GatheringTask`` for this turn. Without a
+    persisted task the snapshot would be unable to distinguish "no
+    gathering task" from "gathering task in flight" — both yield
+    ``next_action == "learn"`` instead of ``awaiting_evidence`` (R1.5).
+    """
+
+    from . import calibration as calibration_mod
+    from . import feature_flags
+    from .coaching_session import (
+        CoachingSessionRepo,
+        SessionSnapshot,
+        decide_next_action,
+    )
+    from .knowledge_core import default_core_path
+
+    # Pull the tenant's calibration history so the snapshot can bias the
+    # next action toward ``practice`` when the calibration score is below
+    # the configured threshold (R4.5). Cold start (no resolved records)
+    # leaves ``calibration_score=0.0`` which already biases toward
+    # practice — exactly what R4.5 wants for a brand-new user.
+    calibration_score = 0.0
+    calibration_records_recent = 0
+    try:
+        from .knowledge_core import get_core
+
+        core = get_core()
+        records = calibration_mod.list_calibration_records(
+            core=core, tenant_id=tenant_id
+        )
+        calibration_score = calibration_mod.calibration_score(records)
+        # ``calibration_records_recent`` counts *resolved* reviews — the
+        # decision table only triggers calibration practice when the
+        # tenant has fewer than 10 resolved data points to learn from.
+        calibration_records_recent = sum(
+            1 for r in records if r.brier_score is not None
+        )
+    except Exception:
+        # No core / no rows → leave the cold-start defaults in place.
+        pass
+
+    snapshot = SessionSnapshot(
+        insufficient_evidence=confidence_band == "insufficient",
+        evidence_gathering_open=evidence_gathering_open
+        or confidence_band == "insufficient",
+        calibration_score=calibration_score,
+        calibration_threshold=feature_flags.calibration_threshold(),
+        calibration_records_recent=calibration_records_recent,
+        skill_chain_step_exit_satisfied=bool(
+            skill_chain and skill_chain.get("exit_satisfied")
+        ),
+        skill_chain_has_next_step=bool(skill_chain),
+    )
+
+    state: str | None = None
+    if coaching_session_id:
+        try:
+            repo = CoachingSessionRepo(path=default_core_path())
+            session = repo.get(tenant_id=tenant_id, session_id=coaching_session_id)
+        except Exception:
+            session = None
+        if session is not None:
+            state = session.state
+
+    next_action = decide_next_action(snapshot)
+    if state is None:
+        # No persisted session → mirror the next_action onto the state
+        # field so coach clients still see a coherent view. ``learn`` is a
+        # synonym for ``active`` here (R1.5).
+        state = "awaiting_evidence" if next_action == "awaiting_evidence" else "active"
+    return state, next_action
+
+
+# ---------------------------------------------------------------------------
+# Active Evidence Gathering helpers (Task 3.14, R6.1, R6.3, R6.4, R6.6)
+# ---------------------------------------------------------------------------
+
+
+def _open_and_dispatch_evidence_gathering(
+    *,
+    tenant_id: str,
+    actor: str,
+    language: str,
+    claim: str,
+    coaching_session_id: str | None,
+    decision_log_id: str | None,
+    run_id: str | None,
+    evidence_storage: Any | None,
+    evidence_search_runner: Any,
+) -> tuple[dict[str, Any] | None, bool]:
+    """Open + dispatch a :class:`GatheringTask` for an insufficient turn.
+
+    R6.1 / R6.2: every coach turn whose verifier reports
+    ``insufficient_evidence=true`` opens exactly one
+    ``evidence_gathering_tasks`` row and dispatches an ``expert_search``
+    seeded with the claim. Each result lands in ``pending_knowledge``
+    with the documented R11.1 defaults via
+    :func:`evidence_gathering.dispatch_search`.
+
+    The function is intentionally robust to missing storage in unit
+    harnesses: when ``evidence_storage`` is ``None`` we fall back to
+    :func:`apps.api.storage.get_storage`. Any exception during dispatch
+    (e.g. a search runner that errors out, a misconfigured pending
+    sink) keeps the task in ``INSUFFICIENT`` and returns its id so the
+    caller can still render ``next_action="awaiting_evidence"`` and
+    block the verdict (R6.3 / R11.4 — fail-closed semantics).
+
+    Returns
+    -------
+    ``(payload, opened)`` — a dict suitable for the response
+    ``evidence_gathering`` field (with ``task_id``, ``state``, claim
+    and pending-knowledge ids), and a ``opened`` boolean indicating
+    whether a task was successfully created. ``payload=None`` /
+    ``opened=False`` when the open call itself failed (e.g. the
+    feature flags are off or the schema is missing).
+    """
+
+    from .evidence_gathering import (
+        GatheringState,
+        dispatch_search,
+        open_task,
+    )
+    from .knowledge_core import get_core
+
+    try:
+        core = get_core()
+    except Exception:
+        return None, False
+
+    try:
+        task = open_task(
+            core=core,
+            tenant_id=tenant_id,
+            claim=claim,
+            session_id=coaching_session_id,
+            coach_turn_id=run_id,
+            decision_log_id=decision_log_id,
+            actor=actor,
+        )
+    except Exception:
+        # Open failed (schema missing, empty claim) — fail-closed by
+        # signalling no task and letting the snapshot still flag
+        # ``awaiting_evidence`` because ``confidence_band="insufficient"``.
+        return None, False
+
+    payload: dict[str, Any] = {
+        "task_id": task.id,
+        "state": task.state.value,
+        "claim": task.claim,
+        "session_id": task.session_id,
+        "coach_turn_id": task.coach_turn_id,
+        "decision_log_id": task.decision_log_id,
+        "pending_knowledge_ids": list(task.pending_knowledge_ids),
+        "dispatch_status": "skipped",
+    }
+
+    storage = evidence_storage
+    if storage is None:
+        try:
+            from ..storage import get_storage  # type: ignore[import-not-found]
+
+            storage = get_storage()
+        except Exception:
+            storage = None
+
+    if storage is None:
+        # No pending sink available → leave the task in INSUFFICIENT.
+        # ``verdict_allowed_for_decision`` will still return ``False``
+        # because the task exists and is non-approved (R6.3).
+        payload["dispatch_status"] = "no_storage"
+        return payload, True
+
+    try:
+        final_task, pending_records = dispatch_search(
+            core=core,
+            storage=storage,
+            task=task,
+            actor=actor,
+            language=language,
+            search_runner=evidence_search_runner,
+        )
+        payload.update(
+            {
+                "task_id": final_task.id,
+                "state": final_task.state.value,
+                "pending_knowledge_ids": [rec.id for rec in pending_records],
+                "dispatch_status": "dispatched",
+            }
+        )
+    except Exception:
+        # Dispatch failed — task stays at whatever state ``open_task``
+        # left it (INSUFFICIENT) and the verdict remains blocked.
+        payload["dispatch_status"] = "failed"
+
+    return payload, True
+
+
+def _evidence_verdict_allowed(
+    *,
+    tenant_id: str,
+    decision_log_id: str,
+) -> bool:
+    """Tenant-scoped verdict gate for a decision log (R6.3, R11.4).
+
+    Wraps :func:`evidence_gathering.verdict_allowed_for_decision` so the
+    orchestrator stays decoupled from the storage initialisation
+    boilerplate. Returns ``True`` when no gathering task is linked to
+    the decision (no loop ever opened) or when every linked task has
+    reached :attr:`GatheringState.APPROVED`. Any other state — including
+    ``REJECTED`` (R6.6) and ``CLOSED`` — keeps the verdict blocked.
+    """
+
+    from .evidence_gathering import verdict_allowed_for_decision
+    from .knowledge_core import get_core
+
+    try:
+        core = get_core()
+    except Exception:
+        # Without a core we cannot prove the loop is closed; default to
+        # blocked so callers fail-closed (R6.3 fail-closed semantics).
+        return False
+    try:
+        return verdict_allowed_for_decision(
+            core=core, tenant_id=tenant_id, decision_log_id=decision_log_id
+        )
+    except Exception:
+        return False

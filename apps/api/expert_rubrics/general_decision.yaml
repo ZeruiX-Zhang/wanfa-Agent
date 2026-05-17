@@ -1,0 +1,44 @@
+domain: general_decision
+version: "1.0.0"
+author: Reality OS Team
+source: docs/PRODUCTION_READINESS.md
+cited_evidence_ids: []
+dimensions:
+  - id: framing
+    weight: 0.20
+    anchors:
+      - "最坏情况"
+      - "可承受损失"
+      - "选项空间"
+      - "时间窗口"
+      - "worst case"
+  - id: evidence
+    weight: 0.20
+    anchors:
+      - "数据来源"
+      - "样本量"
+      - "对照组"
+      - "evidence"
+  - id: tradeoffs
+    weight: 0.20
+    anchors:
+      - "机会成本"
+      - "可逆性"
+      - "二阶效应"
+      - "second-order"
+  - id: feasibility
+    weight: 0.20
+    anchors:
+      - "资源"
+      - "时间"
+      - "依赖"
+      - "feasibility"
+  - id: review
+    weight: 0.20
+    anchors:
+      - "复盘指标"
+      - "止损点"
+      - "下次信号"
+      - "review"
+examples:
+  - "好答案应包含可承受损失估算 + 复盘指标。"

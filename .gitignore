@@ -33,6 +33,8 @@ target/
 .runtime/
 test-results/
 playwright-report/
+.pytest_tmp/
+.vscode/
 
 # Keep legacy runtime assets unless explicitly migrated and reviewed.
 !legacy/**/workspace/**

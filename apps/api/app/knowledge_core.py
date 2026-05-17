@@ -33,13 +33,16 @@ import math
 import re
 import sqlite3
 import threading
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Literal, Optional
 from urllib.parse import urlsplit, urlunsplit
 from uuid import uuid4
 
+from . import audit_events
+from .coaching_schema import apply_coaching_schema
+from .mastery import MasteryState, decay, sm2_update
 from .security_scanner import evidence_warning, flags_for_text
 
 
@@ -183,6 +186,19 @@ class Concept:
     item_ids: list[str]
     neighbors: list[str]
     created_at: str
+    # SM-2 mastery extension (R5.1, R5.6). All fields have backwards-compatible
+    # defaults so existing call sites that build a ``Concept`` with only the
+    # original six required fields keep working. The persisted columns are
+    # added by ``apps.api.app.coaching_schema.apply_additive_columns`` and
+    # match these defaults.
+    mastery_score: float = 0.0
+    last_practiced_at: str | None = None
+    next_due_at: str | None = None
+    decay_lambda: float = 0.05
+    ef: float = 2.5
+    repetition: int = 0
+    interval_days: float = 0.0
+    domain: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -192,6 +208,14 @@ class Concept:
             "item_ids": list(self.item_ids),
             "neighbors": list(self.neighbors),
             "created_at": self.created_at,
+            "mastery_score": self.mastery_score,
+            "last_practiced_at": self.last_practiced_at,
+            "next_due_at": self.next_due_at,
+            "decay_lambda": self.decay_lambda,
+            "ef": self.ef,
+            "repetition": self.repetition,
+            "interval_days": self.interval_days,
+            "domain": self.domain,
         }
 
 
@@ -637,6 +661,11 @@ class KnowledgeCore:
                 db.execute("alter table knowledge_items add column needs_refresh integer not null default 0")
             if "validation_status" not in existing_cols:
                 db.execute("alter table knowledge_items add column validation_status text not null default 'not_validated'")
+
+            # Additive expert-coaching-loop schema (R12.1, R16.1). Runs in the
+            # same transaction context so the new tables either all appear or
+            # none do.
+            apply_coaching_schema(db)
 
     # ---- absorption ----------------------------------------------------
 
@@ -1848,9 +1877,310 @@ class KnowledgeCore:
                         item_ids=item_ids,
                         neighbors=neighbours,
                         created_at=row["created_at"],
+                        **_concept_mastery_kwargs(row),
                     )
                 )
-        return concepts
+        return [self.lazy_decay_on_read(concept) for concept in concepts]
+
+    def load_concept(
+        self, *, tenant_id: str, concept_id: str
+    ) -> Concept | None:
+        """Load a single :class:`Concept` with lazy decay applied on read.
+
+        Returns ``None`` if the concept does not exist for ``tenant_id``.
+        The returned object's ``mastery_score`` reflects exponential decay
+        since ``last_practiced_at`` (R5.5, R5.6); the persisted value is
+        not modified by this call.
+        """
+
+        with self._lock, self._connect() as db:
+            row = db.execute(
+                "select * from concepts where tenant_id = ? and id = ?",
+                (tenant_id, concept_id),
+            ).fetchone()
+            if row is None:
+                return None
+            item_ids = [r["item_id"] for r in db.execute(
+                "select item_id from concept_item where concept_id = ?",
+                (concept_id,),
+            ).fetchall()]
+            neighbours = [r["b"] for r in db.execute(
+                "select b from concept_edges where a = ? order by weight desc limit 5",
+                (concept_id,),
+            ).fetchall()]
+            concept = Concept(
+                id=row["id"],
+                label=row["label"],
+                summary=row["summary"],
+                item_ids=item_ids,
+                neighbors=neighbours,
+                created_at=row["created_at"],
+                **_concept_mastery_kwargs(row),
+            )
+        return self.lazy_decay_on_read(concept)
+
+    def lazy_decay_on_read(
+        self, concept: Concept, *, now: datetime | None = None
+    ) -> Concept:
+        """Return a new :class:`Concept` with ``mastery_score`` decayed in memory.
+
+        Implements R5.6's lazy-decay-on-read contract: the recomputed value
+        is **not** persisted by this method. The caller's same-turn write
+        path (e.g. :meth:`grade_concept`) is what triggers a persist.
+
+        ``now`` defaults to ``datetime.now(timezone.utc)``. When the concept
+        has never been practiced (``last_practiced_at is None``) or its
+        ``decay_lambda`` is non-positive, the input is returned unchanged.
+        """
+
+        if not concept.last_practiced_at or concept.decay_lambda <= 0:
+            return concept
+        try:
+            last = _parse_iso(concept.last_practiced_at)
+        except ValueError:
+            return concept
+        current = now or datetime.now(timezone.utc)
+        dt_seconds = (current - last).total_seconds()
+        if dt_seconds <= 0:
+            return concept
+        dt_days = dt_seconds / 86400.0
+        try:
+            decayed = decay(concept.mastery_score, concept.decay_lambda, dt_days)
+        except ValueError:
+            return concept
+        if decayed >= concept.mastery_score:
+            return concept
+        return replace(concept, mastery_score=decayed)
+
+    def grade_concept(
+        self,
+        *,
+        tenant_id: str,
+        concept_id: str,
+        grade: int,
+        actor: str = "user",
+        now: datetime | None = None,
+    ) -> Concept:
+        """Apply an SM-2 practice grade to a concept and persist the result.
+
+        Loads the current row, builds a :class:`MasteryState` from it,
+        runs :func:`sm2_update`, writes the new fields back to the
+        ``concepts`` table, appends a row to ``mastery_history``, and
+        emits a single ``mastery_update`` audit entry whose payload keys
+        match R13.2 (``concept_id, prev, next, source, grade``).
+
+        Raises ``KeyError`` if the concept does not exist for the tenant
+        and ``ValueError`` if ``grade`` is outside ``0..5``.
+        """
+
+        if not (0 <= grade <= 5):
+            raise ValueError(f"grade must be in 0..5, got {grade!r}")
+
+        current = now or datetime.now(timezone.utc)
+
+        with self._lock, self._connect() as db:
+            row = db.execute(
+                "select * from concepts where tenant_id = ? and id = ?",
+                (tenant_id, concept_id),
+            ).fetchone()
+            if row is None:
+                raise KeyError(concept_id)
+
+            kwargs = _concept_mastery_kwargs(row)
+            prev_score = float(kwargs.get("mastery_score", 0.0))
+            prev_ef = float(kwargs.get("ef", 2.5))
+            prev_repetition = int(kwargs.get("repetition", 0))
+            prev_interval_days = float(kwargs.get("interval_days", 0.0))
+            prev_decay_lambda = float(kwargs.get("decay_lambda", 0.05)) or 0.05
+            last_practiced_raw = kwargs.get("last_practiced_at")
+            try:
+                last_practiced_dt = (
+                    _parse_iso(last_practiced_raw) if last_practiced_raw else current
+                )
+            except ValueError:
+                last_practiced_dt = current
+            try:
+                next_due_dt = _parse_iso(kwargs["next_due_at"]) if kwargs.get("next_due_at") else last_practiced_dt
+            except ValueError:
+                next_due_dt = last_practiced_dt
+
+            prev_state = MasteryState(
+                mastery_score=prev_score,
+                ef=prev_ef,
+                repetition=prev_repetition,
+                interval_days=prev_interval_days,
+                last_practiced_at=last_practiced_dt,
+                next_due_at=next_due_dt,
+                decay_lambda=prev_decay_lambda,
+            )
+            next_state = sm2_update(grade, prev_state, current)
+
+            last_practiced_iso = next_state.last_practiced_at.isoformat()
+            next_due_iso = next_state.next_due_at.isoformat()
+            now_iso = _utc_now_iso()
+
+            db.execute(
+                """
+                update concepts set
+                  mastery_score = ?,
+                  last_practiced_at = ?,
+                  next_due_at = ?,
+                  decay_lambda = ?,
+                  ef = ?,
+                  repetition = ?,
+                  interval_days = ?
+                where tenant_id = ? and id = ?
+                """,
+                (
+                    next_state.mastery_score,
+                    last_practiced_iso,
+                    next_due_iso,
+                    next_state.decay_lambda,
+                    next_state.ef,
+                    next_state.repetition,
+                    next_state.interval_days,
+                    tenant_id,
+                    concept_id,
+                ),
+            )
+            db.execute(
+                """
+                insert into mastery_history(
+                  id, tenant_id, concept_id, prev_score, next_score,
+                  source, grade, created_at
+                ) values (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    _new_id("mh"),
+                    tenant_id,
+                    concept_id,
+                    prev_score,
+                    next_state.mastery_score,
+                    "practice",
+                    grade,
+                    now_iso,
+                ),
+            )
+            _log_audit(
+                db,
+                tenant_id,
+                actor,
+                audit_events.MASTERY_UPDATE,
+                concept_id,
+                {
+                    "concept_id": concept_id,
+                    "prev": prev_score,
+                    "next": next_state.mastery_score,
+                    "source": "practice",
+                    "grade": grade,
+                },
+            )
+
+            # Reload the freshly persisted row in the same connection. We
+            # skip lazy decay here: the practice we just wrote is the most
+            # recent signal, so the persisted value already reflects the
+            # current mastery_score.
+            row = db.execute(
+                "select * from concepts where tenant_id = ? and id = ?",
+                (tenant_id, concept_id),
+            ).fetchone()
+            item_ids = [r["item_id"] for r in db.execute(
+                "select item_id from concept_item where concept_id = ?",
+                (concept_id,),
+            ).fetchall()]
+            neighbours = [r["b"] for r in db.execute(
+                "select b from concept_edges where a = ? order by weight desc limit 5",
+                (concept_id,),
+            ).fetchall()]
+
+        return Concept(
+            id=row["id"],
+            label=row["label"],
+            summary=row["summary"],
+            item_ids=item_ids,
+            neighbors=neighbours,
+            created_at=row["created_at"],
+            **_concept_mastery_kwargs(row),
+        )
+
+    def list_due_concepts(
+        self,
+        *,
+        tenant_id: str,
+        now: datetime | None = None,
+        limit: int | None = None,
+    ) -> list[Concept]:
+        """Return concepts whose ``next_due_at <= now`` in topological order.
+
+        Concepts whose ``next_due_at`` is NULL are treated as due
+        immediately (R5.3). Ordering is computed from the
+        ``concept_prerequisites`` edges so a parent (prerequisite) is
+        always returned before any of its children. Concepts with no
+        prereqs come first.
+
+        ``limit`` is applied to the **due** result set after topological
+        sort. ``now`` defaults to ``datetime.now(timezone.utc)``.
+        """
+
+        current = now or datetime.now(timezone.utc)
+        cutoff_iso = current.isoformat()
+
+        with self._lock, self._connect() as db:
+            rows = db.execute(
+                """
+                select * from concepts
+                where tenant_id = ?
+                  and (next_due_at is null or next_due_at <= ?)
+                """,
+                (tenant_id, cutoff_iso),
+            ).fetchall()
+            due_ids = {row["id"] for row in rows}
+            edges = db.execute(
+                """
+                select parent_concept_id as parent, child_concept_id as child
+                from concept_prerequisites
+                where tenant_id = ?
+                """,
+                (tenant_id,),
+            ).fetchall()
+            row_by_id: dict[str, sqlite3.Row] = {row["id"]: row for row in rows}
+            adjacency: dict[str, list[str]] = {cid: [] for cid in due_ids}
+            indegree: dict[str, int] = {cid: 0 for cid in due_ids}
+            for edge in edges:
+                parent = edge["parent"]
+                child = edge["child"]
+                if parent in due_ids and child in due_ids:
+                    adjacency[parent].append(child)
+                    indegree[child] = indegree.get(child, 0) + 1
+
+            ordered_ids = _topological_order(due_ids, adjacency, indegree, row_by_id)
+
+            concepts: list[Concept] = []
+            for concept_id in ordered_ids:
+                row = row_by_id[concept_id]
+                item_ids = [r["item_id"] for r in db.execute(
+                    "select item_id from concept_item where concept_id = ?",
+                    (concept_id,),
+                ).fetchall()]
+                neighbours = [r["b"] for r in db.execute(
+                    "select b from concept_edges where a = ? order by weight desc limit 5",
+                    (concept_id,),
+                ).fetchall()]
+                concepts.append(
+                    Concept(
+                        id=row["id"],
+                        label=row["label"],
+                        summary=row["summary"],
+                        item_ids=item_ids,
+                        neighbors=neighbours,
+                        created_at=row["created_at"],
+                        **_concept_mastery_kwargs(row),
+                    )
+                )
+        decayed = [self.lazy_decay_on_read(concept) for concept in concepts]
+        if limit is not None:
+            return decayed[: max(0, int(limit))]
+        return decayed
 
     def audit_log(self, *, tenant_id: str, limit: int = 40) -> list[dict[str, Any]]:
         with self._lock, self._connect() as db:
@@ -3000,6 +3330,100 @@ def _concepts_for_item(db: sqlite3.Connection, item_id: str) -> list[str]:
     ).fetchall()]
 
 
+def _concept_mastery_kwargs(row: sqlite3.Row) -> dict[str, Any]:
+    """Extract SM-2 mastery fields from a ``concepts`` row with safe fallbacks.
+
+    Older rows persisted before the additive migration (Task 1.2) may not
+    expose these columns at all. Newer rows have NOT NULL defaults for the
+    numeric fields and may carry NULL for the optional timestamp/domain
+    columns. Either way we fall back to the dataclass defaults so the
+    Concept always constructs cleanly (R5.1, R5.6).
+    """
+
+    keys = set(row.keys())
+    kwargs: dict[str, Any] = {}
+
+    if "mastery_score" in keys and row["mastery_score"] is not None:
+        kwargs["mastery_score"] = float(row["mastery_score"])
+    if "last_practiced_at" in keys:
+        kwargs["last_practiced_at"] = row["last_practiced_at"]
+    if "next_due_at" in keys:
+        kwargs["next_due_at"] = row["next_due_at"]
+    if "decay_lambda" in keys and row["decay_lambda"] is not None:
+        kwargs["decay_lambda"] = float(row["decay_lambda"])
+    if "ef" in keys and row["ef"] is not None:
+        kwargs["ef"] = float(row["ef"])
+    if "repetition" in keys and row["repetition"] is not None:
+        kwargs["repetition"] = int(row["repetition"])
+    if "interval_days" in keys and row["interval_days"] is not None:
+        kwargs["interval_days"] = float(row["interval_days"])
+    if "domain" in keys:
+        kwargs["domain"] = row["domain"]
+
+    return kwargs
+
+
+def _parse_iso(value: str) -> datetime:
+    """Parse an ISO-8601 timestamp into an aware UTC :class:`datetime`.
+
+    Accepts the ``Z`` suffix that ``datetime.isoformat`` does not emit but
+    that some external sources do. Naive timestamps are assumed to be UTC.
+    """
+
+    text = value.strip()
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    parsed = datetime.fromisoformat(text)
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _topological_order(
+    node_ids: set[str],
+    adjacency: dict[str, list[str]],
+    indegree: dict[str, int],
+    row_by_id: dict[str, sqlite3.Row],
+) -> list[str]:
+    """Return ``node_ids`` ordered so prereqs precede dependents.
+
+    Uses Kahn's algorithm with a deterministic tiebreaker (``created_at``,
+    then ``id``) so callers see a stable order. Cycles are tolerated:
+    once the queue drains, any remaining nodes are appended in the same
+    deterministic order so a malformed prerequisite graph never silently
+    drops concepts.
+    """
+
+    def _sort_key(concept_id: str) -> tuple[str, str]:
+        row = row_by_id[concept_id]
+        return (row["created_at"] or "", concept_id)
+
+    queue = sorted(
+        [cid for cid in node_ids if indegree.get(cid, 0) == 0],
+        key=_sort_key,
+    )
+    indegree = dict(indegree)
+    ordered: list[str] = []
+    visited: set[str] = set()
+
+    while queue:
+        node = queue.pop(0)
+        if node in visited:
+            continue
+        visited.add(node)
+        ordered.append(node)
+        for child in sorted(adjacency.get(node, []), key=_sort_key):
+            indegree[child] = indegree.get(child, 0) - 1
+            if indegree[child] <= 0 and child not in visited:
+                queue.append(child)
+        queue.sort(key=_sort_key)
+
+    if len(ordered) < len(node_ids):
+        leftover = sorted(node_ids - visited, key=_sort_key)
+        ordered.extend(leftover)
+    return ordered
+
+
 def _load_concept(db: sqlite3.Connection, concept_id: str) -> Concept | None:
     row = db.execute("select * from concepts where id = ?", (concept_id,)).fetchone()
     if row is None:
@@ -3019,6 +3443,7 @@ def _load_concept(db: sqlite3.Connection, concept_id: str) -> Concept | None:
         item_ids=item_ids,
         neighbors=neighbours,
         created_at=row["created_at"],
+        **_concept_mastery_kwargs(row),
     )
 
 
