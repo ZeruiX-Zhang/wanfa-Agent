@@ -433,7 +433,22 @@ async def coach_turn(payload: CoachTurnRequest, request: Request) -> CoachTurnRe
             skill_chain_model = None
 
     metacog_block: CoachMetacognitionBlock | None = None
-    if payload.confidence_check is not None:
+    metacog_data = orchestration.get("metacognition")
+    if isinstance(metacog_data, dict):
+        try:
+            metacog_block = CoachMetacognitionBlock(
+                confidence_check_required=bool(
+                    metacog_data.get("confidence_check_required")
+                ),
+                user_confidence=metacog_data.get("user_confidence"),
+                system_confidence=metacog_data.get("system_confidence"),
+                questions_you_didnt_ask=list(
+                    metacog_data.get("questions_you_didnt_ask") or []
+                ),
+            )
+        except Exception:
+            metacog_block = None
+    elif payload.confidence_check is not None:
         metacog_block = CoachMetacognitionBlock(
             confidence_check_required=False,
             user_confidence=payload.confidence_check,
@@ -716,6 +731,8 @@ async def rubrics_list(request: Request) -> dict[str, Any]:
 
 
 from ..schemas import (  # noqa: E402  - kept local to mirror coach-turn import block
+    ExperimentReviewRequest,
+    ExperimentReviewResponse,
     PracticeGradeRequest,
     PracticeGradeResponse,
 )
@@ -773,6 +790,160 @@ async def practice_grade(
         ),
         concept=concept.to_dict(),
     )
+
+
+@router.post(
+    "/experiments/{experiment_id}/review", response_model=ExperimentReviewResponse
+)
+async def experiment_review(
+    experiment_id: str, payload: ExperimentReviewRequest, request: Request
+) -> ExperimentReviewResponse:
+    """Record a structured experiment review + hard-bind mastery (R9.1-R9.4).
+
+    Behaviour:
+
+    * Persists an ``experiment_reviews`` row and grades every concept in
+      ``concept_ids`` via SM-2 (``success=5, partial=3, fail=1``) so
+      real-world outcomes move the mastery curve (R9.2).
+    * An empty ``concept_ids`` is valid — the review still persists
+      (an unlinked experiment).
+    * When this review pushes the tenant's trailing experiment-failure
+      streak to the configured threshold, ``consecutive_fail_action``
+      reports ``"chain_switch"`` or ``"human_review_required"`` (R9.3,
+      R9.4).
+    * ``metadata.mode`` is ``"pending-review"`` (R11.5).
+    """
+
+    from . import feature_flags
+    from .skill_chain import consecutive_fail_policy, count_trailing_fails
+
+    context = current_context(request)
+    core = get_core()
+    result = core.record_experiment_review(
+        tenant_id=context.tenant_id,
+        experiment_id=experiment_id,
+        result_class=payload.result_class,
+        key_metrics=[metric.model_dump() for metric in payload.key_metrics],
+        notes=payload.notes,
+        concept_ids=list(payload.concept_ids),
+        actor=context.user_id,
+    )
+
+    # Consecutive-fail policy (R9.3, R9.4): count this tenant's trailing
+    # experiment failures and escalate once the threshold is reached.
+    trailing = count_trailing_fails(
+        core.recent_experiment_result_classes(tenant_id=context.tenant_id)
+    )
+    fail_action = consecutive_fail_policy(
+        trailing_fails=trailing,
+        threshold=feature_flags.consecutive_fail_threshold(),
+    )
+
+    return ExperimentReviewResponse(
+        metadata=_make_coach_metadata(
+            adapter="v2.experiments.review",
+            source_system="apps:api",
+            mode="pending-review",
+            read_only=False,
+        ),
+        review=result["review"],
+        graded_concepts=result["graded_concepts"],
+        consecutive_fail_action=fail_action,
+    )
+
+
+@router.post("/concepts/{concept_id}/analogies")
+async def concept_analogies(
+    concept_id: str, request: Request, limit: int = 5
+) -> dict[str, Any]:
+    """Cross-domain analogies for a concept (R8.3).
+
+    Returns concepts in *other* domains ranked by embedding cosine
+    similarity to the source concept. ``analogies_available`` is
+    ``False`` when the embed layer is off (no stored vectors), in which
+    case ``analogies`` is empty rather than synthesised. Cross-tenant or
+    unknown concept ids surface as ``404`` with no metadata leak
+    (R12.3, R10.6). ``metadata.mode`` is ``"read-only"`` — this endpoint
+    never writes.
+    """
+
+    context = current_context(request)
+    result = get_core().find_analogies(
+        tenant_id=context.tenant_id,
+        concept_id=concept_id,
+        limit=max(1, min(20, limit)),
+    )
+    if result is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="concept not found"
+        )
+    return {
+        "metadata": _make_coach_metadata(
+            adapter="v2.concepts.analogies",
+            source_system="apps:api",
+            mode="read-only",
+            read_only=True,
+        ),
+        **result,
+    }
+
+
+# ---------------------------------------------------------------------------
+# learning dashboard (Task 5.1-5.4, R10, read-only)
+# ---------------------------------------------------------------------------
+
+
+def _dashboard_metadata(adapter: str) -> Any:
+    return _make_coach_metadata(
+        adapter=adapter,
+        source_system="apps:api",
+        mode="read-only",
+        read_only=True,
+    )
+
+
+@router.get("/dashboard/mastery")
+async def dashboard_mastery(request: Request) -> dict[str, Any]:
+    """Mastery heatmap grouped by domain (R10.1.a). Tenant-scoped, read-only."""
+
+    context = current_context(request)
+    return {
+        "metadata": _dashboard_metadata("v2.dashboard.mastery"),
+        **get_core().dashboard_mastery(tenant_id=context.tenant_id),
+    }
+
+
+@router.get("/dashboard/calibration")
+async def dashboard_calibration(request: Request) -> dict[str, Any]:
+    """Calibration curve + Brier score (R10.1.b). Tenant-scoped, read-only."""
+
+    context = current_context(request)
+    return {
+        "metadata": _dashboard_metadata("v2.dashboard.calibration"),
+        **get_core().dashboard_calibration(tenant_id=context.tenant_id),
+    }
+
+
+@router.get("/dashboard/skill-chain")
+async def dashboard_skill_chain(request: Request) -> dict[str, Any]:
+    """Skill-chain completion rate per problem_type (R10.1.c). Read-only."""
+
+    context = current_context(request)
+    return {
+        "metadata": _dashboard_metadata("v2.dashboard.skill_chain"),
+        **get_core().dashboard_skill_chain(tenant_id=context.tenant_id),
+    }
+
+
+@router.get("/dashboard/decay")
+async def dashboard_decay(request: Request) -> dict[str, Any]:
+    """Concept decay curves from ``last_practiced_at`` (R10.1.d). Read-only."""
+
+    context = current_context(request)
+    return {
+        "metadata": _dashboard_metadata("v2.dashboard.decay"),
+        **get_core().dashboard_decay(tenant_id=context.tenant_id),
+    }
 
 
 # ---------------------------------------------------------------------------

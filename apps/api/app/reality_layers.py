@@ -221,6 +221,100 @@ class LearningReview:
 
 
 # ---------------------------------------------------------------------------
+# Structured experiment review (expert-coaching-loop, R9.1)
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class KeyMetric:
+    """One measured outcome of an experiment (R9.1, design data model 8).
+
+    ``breached`` is the per-metric breach predicate from Property 20:
+    the metric breaches when the observed ``value`` deviates from
+    ``target`` by more than ``tolerance``.
+    """
+
+    name: str
+    target: float
+    value: float
+    tolerance: float = 0.0
+
+    @property
+    def breached(self) -> bool:
+        return abs(self.value - self.target) > self.tolerance
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "target": self.target,
+            "value": self.value,
+            "tolerance": self.tolerance,
+            "breached": self.breached,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "KeyMetric":
+        return cls(
+            name=str(data.get("name", "")),
+            target=float(data.get("target", 0.0)),
+            value=float(data.get("value", 0.0)),
+            tolerance=float(data.get("tolerance", 0.0)),
+        )
+
+
+@dataclass
+class ExperimentReview:
+    """Structured post-experiment review (R9.1).
+
+    Distinct from the free-text ``ActionExperiment.actual_result``, which
+    is kept verbatim for backward compatibility. This aggregate is what
+    the mastery hard-binding (R9.2) and consecutive-fail policy (R9.3)
+    operate on. Mirrors the ``experiment_reviews`` table.
+    """
+
+    id: str
+    tenant_id: str
+    experiment_id: str
+    result_class: Literal["success", "partial", "fail"]
+    key_metrics: list[KeyMetric]
+    notes: str
+    created_at: str
+
+    @property
+    def metric_breach(self) -> bool:
+        """True when any key metric exceeds its tolerance (Property 20)."""
+
+        return any(metric.breached for metric in self.key_metrics)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "tenant_id": self.tenant_id,
+            "experiment_id": self.experiment_id,
+            "result_class": self.result_class,
+            "key_metrics": [metric.to_dict() for metric in self.key_metrics],
+            "metric_breach": self.metric_breach,
+            "notes": self.notes,
+            "created_at": self.created_at,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "ExperimentReview":
+        return cls(
+            id=str(data["id"]),
+            tenant_id=str(data["tenant_id"]),
+            experiment_id=str(data["experiment_id"]),
+            result_class=data["result_class"],
+            key_metrics=[
+                KeyMetric.from_dict(metric)
+                for metric in (data.get("key_metrics") or [])
+            ],
+            notes=str(data.get("notes", "")),
+            created_at=str(data["created_at"]),
+        )
+
+
+# ---------------------------------------------------------------------------
 # Decision Log (cross-cutting, referenced by Layer 7)
 # ---------------------------------------------------------------------------
 

@@ -447,6 +447,7 @@ def orchestrated_ask(
     coach_session_state: str | None = None
     coach_evidence_gathering: dict[str, Any] | None = None
     coach_verdict_allowed: bool | None = None
+    coach_metacognition: dict[str, Any] | None = None
     if coach_turn:
         # Expert gap is surfaced separately so coach clients do not have to
         # reach into ``orchestration.audit_result`` (R2.3).
@@ -462,6 +463,23 @@ def orchestrated_ask(
         # ``None`` rather than synthesising a value.
         if advisor_response is not None and advisor_response.skill_chain:
             coach_skill_chain = dict(advisor_response.skill_chain)
+
+        # --- Metacognition hooks (Task 4.2, R7.1, R7.2, R7.5, R7.6) -----
+        # Compute + persist the confidence-check / questions-you-didn't-ask
+        # block. Simple_Mode gates this to once per UTC day per session;
+        # Professional_Mode prompts on every significant turn (R7.6).
+        coach_metacognition = _record_metacognition(
+            tenant_id=tenant_id,
+            actor=actor,
+            coaching_session_id=coaching_session_id,
+            run_id=run_id,
+            mode=mode,
+            language=language,
+            user_message=question,
+            concept_labels=[c.title for c in citations[:2] if c.title],
+            user_confidence=user_confidence_check,
+            system_confidence=round(aggregate, 3),
+        )
 
         # --- Active Evidence Gathering (Task 3.14, R6.1, R6.3, R6.4) ----
         # When verification reports insufficient_evidence in this coach
@@ -588,6 +606,8 @@ def orchestrated_ask(
         # Active Evidence Gathering surface (Task 3.14, R6.3, R6.4, R6.6).
         response["evidence_gathering"] = coach_evidence_gathering
         response["verdict_allowed"] = coach_verdict_allowed
+        # Metacognition block (Task 4.2, R7).
+        response["metacognition"] = coach_metacognition
         if decision_log_id is not None:
             response["decision_log_id"] = decision_log_id
         if user_confidence_check is not None:
@@ -704,6 +724,129 @@ def _resolve_coach_session_state(
         # synonym for ``active`` here (R1.5).
         state = "awaiting_evidence" if next_action == "awaiting_evidence" else "active"
     return state, next_action
+
+
+# ---------------------------------------------------------------------------
+# Metacognition helper (Task 4.2, R7.1, R7.2, R7.5, R7.6)
+# ---------------------------------------------------------------------------
+
+
+def _record_metacognition(
+    *,
+    tenant_id: str,
+    actor: str,
+    coaching_session_id: str | None,
+    run_id: str | None,
+    mode: str,
+    language: str,
+    user_message: str,
+    concept_labels: list[str],
+    user_confidence: float | None,
+    system_confidence: float,
+) -> dict[str, Any] | None:
+    """Compute + persist the metacognition block for a coach turn (R7).
+
+    Simple_Mode surfaces a confidence-check prompt at most once per UTC
+    day per session; Professional_Mode prompts on every significant turn
+    (R7.6, Property 22). When a prompt fires we persist one
+    ``metacognition_records`` row pairing ``user_confidence`` with
+    ``system_confidence`` and emit a ``metacognition.recorded`` audit
+    row (R7.5, R13.1).
+
+    Returns the response block dict, or ``None`` when no coaching
+    session is attached (a metacognition record is always
+    session-scoped).
+    """
+
+    import uuid
+    from datetime import datetime, timezone
+
+    from . import audit_events
+    from . import metacognition as metacog
+    from .knowledge_core import get_core
+
+    if not coaching_session_id:
+        return None
+    try:
+        core = get_core()
+    except Exception:
+        return None
+
+    now = datetime.now(timezone.utc)
+
+    # Per-session per-UTC-day gate for Simple_Mode (Property 22). A row
+    # is only ever written when a prompt fires, so "a record exists
+    # today" is equivalent to "already prompted today".
+    last_prompt_at: datetime | None = None
+    try:
+        with core._lock, core._connect() as db:
+            row = db.execute(
+                "select created_at from metacognition_records "
+                "where tenant_id = ? and session_id = ? "
+                "order by created_at desc limit 1",
+                (tenant_id, coaching_session_id),
+            ).fetchone()
+        if row and row["created_at"]:
+            last_prompt_at = datetime.fromisoformat(row["created_at"])
+    except Exception:
+        last_prompt_at = None
+
+    prompt = metacog.should_prompt(
+        mode=mode, last_prompt_at=last_prompt_at, now=now, significant=True
+    )
+
+    questions: list[str] = []
+    if prompt:
+        questions = metacog.generate_questions_you_didnt_ask(
+            user_message=user_message,
+            concept_labels=concept_labels,
+            language=language,
+        )
+        record_id = f"mcog_{uuid.uuid4().hex[:16]}"
+        try:
+            with core._lock, core._connect() as db:
+                db.execute(
+                    """
+                    insert into metacognition_records(
+                      id, tenant_id, session_id, turn_id,
+                      user_confidence, system_confidence,
+                      questions_engaged, questions_total,
+                      outcome_observed, created_at
+                    ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        record_id,
+                        tenant_id,
+                        coaching_session_id,
+                        run_id or "",
+                        user_confidence,
+                        system_confidence,
+                        0,
+                        len(questions),
+                        None,
+                        now.isoformat(),
+                    ),
+                )
+            core._record_audit(
+                tenant_id=tenant_id,
+                actor=actor,
+                action=audit_events.METACOGNITION_RECORDED,
+                subject=coaching_session_id,
+                payload={
+                    "session_id": coaching_session_id,
+                    "turn_id": run_id or "",
+                },
+            )
+        except Exception:
+            # Persistence / audit is best-effort — never block the turn.
+            pass
+
+    return {
+        "confidence_check_required": prompt,
+        "user_confidence": user_confidence,
+        "system_confidence": system_confidence,
+        "questions_you_didnt_ask": questions,
+    }
 
 
 # ---------------------------------------------------------------------------

@@ -555,6 +555,49 @@ def transition_with_audit(
     return result
 
 
+# ---------------------------------------------------------------------------
+# Consecutive-fail policy (Task 4.12, R9.3, R9.4)
+# ---------------------------------------------------------------------------
+
+
+def count_trailing_fails(result_classes: "list[str]") -> int:
+    """Count consecutive ``"fail"`` outcomes at the tail of the history.
+
+    A single non-fail outcome resets the streak. Used to decide when the
+    consecutive-fail policy fires (Property 20).
+    """
+
+    streak = 0
+    for outcome in reversed(result_classes):
+        if outcome == "fail":
+            streak += 1
+        else:
+            break
+    return streak
+
+
+def consecutive_fail_policy(
+    *,
+    trailing_fails: int,
+    threshold: int = 3,
+    policy: str = "chain_switch",
+) -> str | None:
+    """Decide the response to ``K`` trailing experiment failures (R9.3, R9.4).
+
+    Returns ``"chain_switch"`` or ``"human_review_required"`` once
+    ``trailing_fails`` reaches ``threshold`` (default 3), or ``None``
+    while the streak is still below it. ``policy="human_review"`` selects
+    the human-review escalation; any other value defaults to switching
+    the skill chain.
+    """
+
+    if trailing_fails < max(1, threshold):
+        return None
+    if policy == "human_review":
+        return "human_review_required"
+    return "chain_switch"
+
+
 __all__ = [
     "CHAIN_ROOT",
     "THINKING_SKILLS_ROOT",
@@ -575,4 +618,6 @@ __all__ = [
     "transition_with_audit",
     "record_advance",
     "record_switch",
+    "count_trailing_fails",
+    "consecutive_fail_policy",
 ]

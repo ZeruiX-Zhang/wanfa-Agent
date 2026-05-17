@@ -170,7 +170,7 @@ This plan delivers `expert-coaching-loop` as five flag-gated milestones (M0–M5
     - AC: `tests/test_audit_events_p0.py::test_p0_audit_events_emitted_with_documented_keys`
     - _Requirements: 13.1, 13.4_
 
-- [ ] 3. M2 — P1 (Calibration Loop, SM-2 Mastery, Active Evidence Gathering)
+- [x] 3. M2 — P1 (Calibration Loop, SM-2 Mastery, Active Evidence Gathering)
 
   - [x] 3.1 `mastery.py`: `MasteryState`, `sm2_update`, `decay`
     - Target: new `apps/api/app/mastery.py` (pure, no I/O)
@@ -255,200 +255,200 @@ This plan delivers `expert-coaching-loop` as five flag-gated milestones (M0–M5
     - AC: `tests/test_next_action_calibration.py::test_low_calibration_biases_practice`
     - _Requirements: 4.5_
 
-  - [-] 3.16 `retrieval_practice_plan` SM-2 due selection
+  - [x] 3.16 `retrieval_practice_plan` SM-2 due selection
     - Target: `apps/api/app/knowledge_core.py`
     - `next_due_at <= now()`; mixes cloze / socratic / counterexample
     - AC: `tests/test_practice_plan.py::test_practice_plan_due_only_and_format_mix`
     - _Requirements: 5.3_
 
-  - [ ] 3.17 i18n bundle additions: decision / practice / evidence-gathering
+  - [x] 3.17 i18n bundle additions: decision / practice / evidence-gathering
     - Target: `apps/web/lib/i18n.ts`
     - AC: `tests/test_i18n_parity.py::test_p1_keys_zh_en_parity`
     - _Requirements: 14.1-3_
 
-  - [ ] 3.18 Audit event emission for P1
+  - [x] 3.18 Audit event emission for P1
     - Target: `apps/api/app/mastery.py`, `apps/api/app/calibration.py`, `apps/api/app/evidence_gathering.py`
     - AC: `tests/test_audit_events_p1.py::test_p1_audit_events_emitted_with_documented_keys`
     - _Requirements: 13.2, 13.3_
 
-- [ ] 4. M3 — P2 (Metacognition, Embeddings, Real-World Result Binding) gated by `REALITY_OS_HYBRID_RETRIEVAL` and `REALITY_OS_EMBED_MODE`
+- [x] 4. M3 — P2 (Metacognition, Embeddings, Real-World Result Binding) gated by `REALITY_OS_HYBRID_RETRIEVAL` and `REALITY_OS_EMBED_MODE`
 
-  - [ ] 4.1 `metacognition.py`: rules + `metacognition_score`
+  - [x] 4.1 `metacognition.py`: rules + `metacognition_score`
     - Target: new `apps/api/app/metacognition.py`
     - `should_prompt`, `generate_questions_you_didnt_ask` (3-7), score in [0,1]
     - AC (PBT): `tests/property/test_metacognition_pbt.py::test_property_22_metacognition_rules`
     - _Requirements: 7.1, 7.3, 7.4, 7.6; Property 22_
 
-  - [ ] 4.2 Metacognition integration in coach turn
+  - [x] 4.2 Metacognition integration in coach turn
     - Target: `apps/api/app/orchestrator.py`, `apps/api/app/v2.py`
     - Persist user_confidence + system_confidence pair; emit audit
     - AC: `tests/test_coach_metacog.py::test_coach_turn_emits_metacog_block`, `::test_simple_mode_one_prompt_per_day`
     - _Requirements: 7.1, 7.2, 7.5, 7.6_
 
-  - [ ] 4.3 `vector_store.SqliteEmbedVectorStore` implementation
+  - [x] 4.3 `vector_store.SqliteEmbedVectorStore` implementation
     - Target: `apps/api/app/vector_store.py`
     - little-endian float32; cosine search; `model_registry.embedder`; offline → TF-IDF fallback
     - AC: `tests/test_sqlite_embed_store.py::test_search_returns_cosine_ranked`, `::test_offline_mode_falls_back_to_tfidf`
     - _Requirements: 8.1, 8.4, 8.6_
 
-  - [ ] 4.4 `hybrid_retrieval.py`: `HybridWeights`, `normalize`, `hybrid_score`
+  - [x] 4.4 `hybrid_retrieval.py`: `HybridWeights`, `normalize`, `hybrid_score`
     - Target: new `apps/api/app/hybrid_retrieval.py`
     - AC (PBT): `tests/property/test_hybrid_retrieval_pbt.py::test_property_17_hybrid_score_linearity_and_bounds`
     - _Requirements: 8.2; Property 17_
 
-  - [ ] 4.5 `KnowledgeCore.search` hybrid integration
+  - [x] 4.5 `KnowledgeCore.search` hybrid integration
     - Target: `apps/api/app/knowledge_core.py`
     - Min-max normalize FTS/TF-IDF/cosine, combine via `hybrid_score`, sort top-k
     - AC: `tests/test_search_hybrid.py::test_search_uses_hybrid_when_flag_on`, `::test_search_unchanged_when_flag_off`
     - _Requirements: 8.2_
 
-  - [ ] 4.6 PBT — embedder fallback determinism (Property 19)
+  - [x] 4.6 PBT — embedder fallback determinism (Property 19)
     - Target: new `tests/property/test_embedder_fallback_pbt.py`
     - AC: `test_property_19_embedder_fallback_no_outbound_call_and_deterministic_ranking`
     - _Requirements: 8.4, 8.6, 18.2-3; Property 19_
 
-  - [ ] 4.7 `POST /api/v2/concepts/{id}/analogies` endpoint
+  - [x] 4.7 `POST /api/v2/concepts/{id}/analogies` endpoint
     - Target: `apps/api/app/v2.py`, `apps/api/app/knowledge_core.py`
     - `hit.domain != source.domain`; sort by cosine; `analogies_available=False` when embedder off
     - AC: `tests/test_analogy_endpoint.py::test_analogies_filter_by_domain_and_rank`
     - _Requirements: 8.3_
 
-  - [ ] 4.8 PBT — cross-domain analogy ranking (Property 18)
+  - [x] 4.8 PBT — cross-domain analogy ranking (Property 18)
     - Target: new `tests/property/test_analogy_pbt.py`
     - AC: `test_property_18_analogy_ranking`
     - _Requirements: 8.3; Property 18_
 
-  - [ ] 4.9 Structured `ActionExperiment.review` dataclass
+  - [x] 4.9 Structured `ActionExperiment.review` dataclass
     - Target: `apps/api/app/reality_layers.py`, `apps/api/schemas.py`
     - Old `experiment.actual_result` remains for compat
     - AC: `tests/test_experiment_review_dataclass.py::test_dataclass_round_trip_with_metrics`
     - _Requirements: 9.1_
 
-  - [ ] 4.10 `POST /api/v2/experiments/{id}/review` endpoint with mastery hard-binding
+  - [x] 4.10 `POST /api/v2/experiments/{id}/review` endpoint with mastery hard-binding
     - Target: `apps/api/app/v2.py`, `apps/api/app/knowledge_core.py`
     - For every linked Concept call `grade_concept(grade=grade_to_sm2(result_class))`
     - AC: `tests/test_experiment_review_endpoint.py::test_review_binds_mastery_for_linked_concepts`, `::test_unlinked_experiment_review_persists_without_error`
     - _Requirements: 9.1, 9.2, 9.5_
 
-  - [ ] 4.11 PBT — real-world result binding (Property 20)
+  - [x] 4.11 PBT — real-world result binding (Property 20)
     - Target: new `tests/property/test_result_binding_pbt.py`
     - AC: `test_property_20_result_binding_metric_breach_and_consecutive_fail_switch`
     - _Requirements: 9.2-4; Property 20_
 
-  - [ ] 4.12 Consecutive-fail policy: chain switch or `human_review_required`
+  - [x] 4.12 Consecutive-fail policy: chain switch or `human_review_required`
     - Target: `apps/api/app/coaching_session.py`, `apps/api/app/skill_chain.py`
     - K trailing fails (default 3) → configured policy
     - AC: `tests/test_consecutive_fail_policy.py::test_three_fails_trigger_chain_switch`, `::test_three_fails_with_policy_human_review`
     - _Requirements: 9.3, 9.4_
 
-  - [ ] 4.13 i18n bundle additions: metacognition / analogy / experiment-review
+  - [x] 4.13 i18n bundle additions: metacognition / analogy / experiment-review
     - Target: `apps/web/lib/i18n.ts`
     - AC: `tests/test_i18n_parity.py::test_p2_keys_zh_en_parity`
     - _Requirements: 14.1-3_
 
-  - [ ] 4.14 Wire feature flag `REALITY_OS_HYBRID_RETRIEVAL`
+  - [x] 4.14 Wire feature flag `REALITY_OS_HYBRID_RETRIEVAL`
     - Target: `apps/api/app/knowledge_core.py`
     - Off → existing FTS/TF-IDF behavior unchanged
     - AC: `tests/test_flag_hybrid.py::test_hybrid_disabled_uses_legacy_search`
     - _Requirements: rollout plan_
 
-  - [ ] 4.15 Wire feature flag `REALITY_OS_EMBED_MODE`
+  - [x] 4.15 Wire feature flag `REALITY_OS_EMBED_MODE`
     - Target: `apps/api/app/vector_store.py`
     - `disabled` and `offline` bypass embedder
     - AC: `tests/test_flag_embed_mode.py::test_offline_uses_tfidf`, `::test_disabled_disables_embed_path`
     - _Requirements: 8.5, 8.6, 18.3_
 
-  - [ ] 4.16 Audit event emission for P2
+  - [x] 4.16 Audit event emission for P2
     - Target: `apps/api/app/metacognition.py`, `apps/api/app/v2.py`
     - AC: `tests/test_audit_events_p2.py::test_p2_audit_events_emitted_with_documented_keys`
     - _Requirements: 13.1, 13.2_
 
-- [ ] 5. M4 — P3 (Learning Dashboard, read-only)
+- [x] 5. M4 — P3 (Learning Dashboard, read-only)
 
-  - [ ] 5.1 `GET /api/v2/dashboard/mastery` (heatmap)
+  - [x] 5.1 `GET /api/v2/dashboard/mastery` (heatmap)
     - Target: `apps/api/app/v2.py`, `apps/api/app/knowledge_core.py`
     - Tenant-scoped; group by domain; `metadata.mode = "read-only"`
     - AC: `tests/test_dashboard_mastery.py::test_mastery_heatmap_tenant_scoped`
     - _Requirements: 10.1.a, 10.6_
 
-  - [ ] 5.2 `GET /api/v2/dashboard/calibration` (curve + Brier)
+  - [x] 5.2 `GET /api/v2/dashboard/calibration` (curve + Brier)
     - Target: `apps/api/app/v2.py`
     - AC: `tests/test_dashboard_calibration.py::test_calibration_curve_bins_present`
     - _Requirements: 10.1.b_
 
-  - [ ] 5.3 `GET /api/v2/dashboard/skill-chain` (completion rate per problem_type)
+  - [x] 5.3 `GET /api/v2/dashboard/skill-chain` (completion rate per problem_type)
     - Target: `apps/api/app/v2.py`
     - AC: `tests/test_dashboard_skill_chain.py::test_completion_rate_returns_per_step_retention`
     - _Requirements: 10.1.c_
 
-  - [ ] 5.4 `GET /api/v2/dashboard/decay` (concept decay curves)
+  - [x] 5.4 `GET /api/v2/dashboard/decay` (concept decay curves)
     - Target: `apps/api/app/v2.py`
     - AC: `tests/test_dashboard_decay.py::test_decay_curves_use_last_practiced_at`
     - _Requirements: 10.1.d_
 
-  - [ ] 5.5 Web dashboard panels (Simple_Mode — at most 3 panels, no controls)
+  - [x] 5.5 Web dashboard panels (Simple_Mode — at most 3 panels, no controls)
     - Target: `apps/web/app/dashboard/page.tsx`, `apps/web/app/eval/page.tsx`, `apps/web/app/learn/page.tsx`, `apps/web/components/dashboard/{MasteryHeatmap,CalibrationCurve,SkillChainCompletion}.tsx`
     - AC: `apps/web/__tests__/dashboard.simple.test.tsx::test_simple_mode_renders_3_panels_no_controls`
     - _Requirements: 10.2, 10.3_
 
-  - [ ] 5.6 Web dashboard panels (Professional_Mode — 4 panels + filters)
+  - [x] 5.6 Web dashboard panels (Professional_Mode — 4 panels + filters)
     - Target: `apps/web/app/dashboard/page.tsx`, `apps/web/components/dashboard/{ConceptDecay,Filters}.tsx`
     - AC: `apps/web/__tests__/dashboard.pro.test.tsx::test_pro_mode_renders_4_panels_and_filters`
     - _Requirements: 10.4_
 
-  - [ ] 5.7 i18n bundle additions: dashboard strings (`dash.*`)
+  - [x] 5.7 i18n bundle additions: dashboard strings (`dash.*`)
     - Target: `apps/web/lib/i18n.ts`
     - AC: `tests/test_i18n_parity.py::test_dashboard_keys_zh_en_parity`
     - _Requirements: 10.5, 14.1-3_
 
-- [ ] 6. M5 — Hardening (cross-cutting PBTs, smoke tests, end-to-end integration)
+- [x] 6. M5 — Hardening (cross-cutting PBTs, smoke tests, end-to-end integration)
 
-  - [ ] 6.1 PBT — tenant isolation 404 (Property 5)
+  - [x] 6.1 PBT — tenant isolation 404 (Property 5)
     - Target: new `tests/property/test_tenant_isolation_pbt.py`
     - AC: `test_property_5_cross_tenant_returns_404`
     - _Requirements: 1.10, 12.2-4, 10.6; Property 5_
 
-  - [ ] 6.2 PBT — pending-review contract (Property 16)
+  - [x] 6.2 PBT — pending-review contract (Property 16)
     - Target: new `tests/property/test_pending_review_pbt.py`
     - AC: `test_property_16_pending_review_metadata_and_status`
     - _Requirements: 11.1, 11.2, 11.5; Property 16_
 
-  - [ ] 6.3 PBT — audit event coverage (Property 21)
+  - [x] 6.3 PBT — audit event coverage (Property 21)
     - Target: new `tests/property/test_audit_coverage_pbt.py`
     - AC: `test_property_21_one_audit_per_accepted_state_change_and_none_on_reject`
     - _Requirements: 13.1-4; Property 21_
 
-  - [ ] 6.4 Unit test — API key masking (Property 25)
+  - [x] 6.4 Unit test — API key masking (Property 25)
     - Target: new `tests/test_api_key_mask.py`
     - AC: `test_property_25_api_key_mask_to_dict_never_returns_raw`
     - _Requirements: 18.4; Property 25_
 
-  - [ ] 6.5 Smoke test — schema migration on existing dev DB
+  - [x] 6.5 Smoke test — schema migration on existing dev DB
     - Target: new `tests/test_smoke_migration.py`
     - AC: `test_existing_dev_db_migrates_cleanly_and_old_rows_untouched`
     - _Requirements: 12.1, 16.1_
 
-  - [ ] 6.6 Smoke test — feature flag dark-launch matrix
+  - [x] 6.6 Smoke test — feature flag dark-launch matrix
     - Target: new `tests/test_smoke_flags.py`
     - AC: `test_all_flags_off_legacy_routes_intact`, `::test_flags_can_be_flipped_per_milestone`
     - _Requirements: 15.2_
 
-  - [ ] 6.7 Smoke test — `legacy/` untouched and not imported
+  - [x] 6.7 Smoke test — `legacy/` untouched and not imported
     - Target: new `tests/test_smoke_legacy.py`
     - AC: `test_no_new_module_imports_from_legacy`, `::test_no_legacy_files_modified_by_feature_paths`
     - _Requirements: 16.1, 16.2_
 
-  - [ ] 6.8 Integration test — full coach turn end-to-end (zh-CN + en)
+  - [x] 6.8 Integration test — full coach turn end-to-end (zh-CN + en)
     - Target: new `tests/test_coach_e2e.py`
     - AC: `test_coach_e2e_zhCN_full_loop`, `::test_coach_e2e_en_full_loop`
     - _Requirements: 1.3, 14.2-3_
 
-  - [ ] 6.9 Integration test — Active Evidence Gathering closure
+  - [x] 6.9 Integration test — Active Evidence Gathering closure
     - Target: new `tests/test_evidence_e2e.py`
     - AC: `test_decision_blocked_until_pending_approved`, `::test_rejected_keeps_loop_open_until_approve_or_explicit_close`
     - _Requirements: 6.3-6, 11.4_
 
-  - [ ] 6.10 Integration test — embedder offline mode does not call out
+  - [x] 6.10 Integration test — embedder offline mode does not call out
     - Target: new `tests/test_embed_offline_e2e.py`
     - AC: `test_embed_offline_no_outbound_request`
     - _Requirements: 8.6, 18.3_

@@ -1158,14 +1158,46 @@ class KnowledgeCore:
             for row_id, score in tfidf_rows:
                 candidates.setdefault(row_id, {"fts": 0.0, "vec": 0.0})["vec"] = score
 
+            # Hybrid retrieval (Task 4.5, R8.2) is dark-launched behind
+            # ``REALITY_OS_HYBRID_RETRIEVAL``. When off, the legacy fixed
+            # 0.55/0.35/0.1 blend below runs verbatim — byte-identical
+            # behaviour for existing callers (rollout plan).
+            from . import feature_flags
+
+            hybrid_on = feature_flags.hybrid_retrieval_enabled()
+            hybrid_weights = None
+            fts_lo = fts_hi = vec_lo = vec_hi = 0.0
+            if hybrid_on:
+                from .hybrid_retrieval import HybridWeights, normalize
+
+                fts_vals = [p["fts"] for p in candidates.values()]
+                vec_vals = [p["vec"] for p in candidates.values()]
+                if fts_vals:
+                    fts_lo, fts_hi = min(fts_vals), max(fts_vals)
+                if vec_vals:
+                    vec_lo, vec_hi = min(vec_vals), max(vec_vals)
+                # The embed signal is not wired into ``core.search`` (it
+                # lives in ``SqliteEmbedVectorStore``); ``embed_available``
+                # is False so ``normalize`` reallocates its mass to
+                # FTS/TF-IDF.
+                hybrid_weights = normalize(HybridWeights(), embed_available=False)
+
             results: list[tuple[KnowledgeItem, float]] = []
             for item_id, parts in candidates.items():
                 item = self._hydrate_item(db, item_id, tenant_id, None)
                 if item is None:
                     continue
-                blended = 0.55 * parts["fts"] + 0.35 * parts["vec"] + 0.1 * item.quality_score
                 if item.quality_tier == "rejected":
                     continue
+                if hybrid_on and hybrid_weights is not None:
+                    from .hybrid_retrieval import hybrid_score
+
+                    fts_norm = _minmax_norm(parts["fts"], fts_lo, fts_hi)
+                    vec_norm = _minmax_norm(parts["vec"], vec_lo, vec_hi)
+                    blended = hybrid_score(fts_norm, vec_norm, 0.0, hybrid_weights)
+                    blended = 0.9 * blended + 0.1 * item.quality_score
+                else:
+                    blended = 0.55 * parts["fts"] + 0.35 * parts["vec"] + 0.1 * item.quality_score
                 if item.quality_tier == "insufficient":
                     blended *= 0.4
                 # Step 3: Boost solo_thinking items (user's own unassisted reasoning)
@@ -1639,34 +1671,30 @@ class KnowledgeCore:
         tenant_id: str,
         language: str = "zh-CN",
         limit: int = 5,
+        now: datetime | None = None,
     ) -> list[dict[str, Any]]:
-        """Generate retrieval practice exercises for low-mastery concepts.
+        """Generate retrieval practice exercises for SM-2 *due* concepts.
 
         Step 3: Scaffold-style feedback to combat capability degradation.
-        For each concept the user frequently retrieves but hasn't mastered:
+        Concepts are selected by the spaced-repetition scheduler --- only
+        those whose ``next_due_at <= now`` (a NULL ``next_due_at`` is
+        treated as due immediately) qualify (R5.3, Property 23) --- and
+        returned in prerequisite-topological order. Each due concept
+        yields a fixed format mix:
+
         - 3 cloze (fill-in-the-blank) questions from item bodies
-        - 1 counterexample question (from conflicting items or concept neighbors)
+        - 1 counterexample question (from concept neighbors)
         - 1 Socratic follow-up question
         """
-        with self._lock, self._connect() as db:
-            rows = db.execute(
-                """
-                select concept_id, count(*) as retrieved
-                from learning_signals
-                where tenant_id = ? and event = 'retrieved'
-                group by concept_id
-                order by retrieved desc
-                limit ?
-                """,
-                (tenant_id, limit * 2),
-            ).fetchall()
-            if not rows:
-                return []
 
-            exercises: list[dict[str, Any]] = []
-            for row in rows:
-                concept = _load_concept(db, row["concept_id"])
-                if not concept or not concept.item_ids:
+        due = self.list_due_concepts(tenant_id=tenant_id, now=now)
+        if not due:
+            return []
+
+        exercises: list[dict[str, Any]] = []
+        with self._lock, self._connect() as db:
+            for concept in due:
+                if not concept.item_ids:
                     continue
 
                 # Get the first item's body for cloze generation
@@ -1680,22 +1708,19 @@ class KnowledgeCore:
                 body = item_row["body"]
                 title = item_row["title"]
 
-                cloze_questions = _generate_cloze(body, concept.label, language)
-                counterexample = _generate_counterexample(concept, language)
-                socratic = _generate_socratic(concept.label, title, language)
-
                 exercises.append({
                     "concept_id": concept.id,
                     "label": concept.label,
-                    "retrieved_count": int(row["retrieved"]),
-                    "cloze_questions": cloze_questions,
-                    "counterexample": counterexample,
-                    "socratic_question": socratic,
+                    "mastery_score": concept.mastery_score,
+                    "next_due_at": concept.next_due_at,
+                    "cloze_questions": _generate_cloze(body, concept.label, language),
+                    "counterexample": _generate_counterexample(concept, language),
+                    "socratic_question": _generate_socratic(concept.label, title, language),
                 })
                 if len(exercises) >= limit:
                     break
 
-            return exercises
+        return exercises
 
     # ---- library browsing ---------------------------------------------
 
@@ -1960,6 +1985,7 @@ class KnowledgeCore:
         grade: int,
         actor: str = "user",
         now: datetime | None = None,
+        source: str = "practice",
     ) -> Concept:
         """Apply an SM-2 practice grade to a concept and persist the result.
 
@@ -2056,7 +2082,7 @@ class KnowledgeCore:
                     concept_id,
                     prev_score,
                     next_state.mastery_score,
-                    "practice",
+                    source,
                     grade,
                     now_iso,
                 ),
@@ -2071,7 +2097,7 @@ class KnowledgeCore:
                     "concept_id": concept_id,
                     "prev": prev_score,
                     "next": next_state.mastery_score,
-                    "source": "practice",
+                    "source": source,
                     "grade": grade,
                 },
             )
@@ -2181,6 +2207,355 @@ class KnowledgeCore:
         if limit is not None:
             return decayed[: max(0, int(limit))]
         return decayed
+
+    def _concept_vector(
+        self, db: sqlite3.Connection, tenant_id: str, concept_id: str
+    ) -> list[float] | None:
+        """Average the stored vectors of a concept's linked items (R8.3).
+
+        Returns ``None`` when no linked item carries an embedding, which
+        is how the analogy surface degrades when the embed layer is off.
+        """
+
+        from .vector_store import decode_vector
+
+        item_rows = db.execute(
+            "select item_id from concept_item where concept_id = ?",
+            (concept_id,),
+        ).fetchall()
+        vectors: list[list[float]] = []
+        for item_row in item_rows:
+            row = db.execute(
+                "select vector from knowledge_items where tenant_id = ? and id = ?",
+                (tenant_id, item_row["item_id"]),
+            ).fetchone()
+            if row is not None and row["vector"]:
+                vectors.append(decode_vector(row["vector"]))
+        if not vectors:
+            return None
+        dim = min(len(v) for v in vectors)
+        return [sum(v[i] for v in vectors) / len(vectors) for i in range(dim)]
+
+    def find_analogies(
+        self,
+        *,
+        tenant_id: str,
+        concept_id: str,
+        limit: int = 5,
+    ) -> dict[str, Any] | None:
+        """Cross-domain analogies for a concept, cosine-ranked (R8.3).
+
+        Returns ``None`` when the source concept does not exist for this
+        tenant (so the caller can answer 404 without leaking existence).
+        ``analogies_available`` is ``False`` when the source concept --- or
+        every cross-domain candidate --- lacks a stored embedding, which
+        is the case whenever the embed layer is disabled.
+        """
+
+        from .vector_store import rank_analogies
+
+        with self._lock, self._connect() as db:
+            source = db.execute(
+                "select id, domain from concepts where tenant_id = ? and id = ?",
+                (tenant_id, concept_id),
+            ).fetchone()
+            if source is None:
+                return None
+            source_domain = source["domain"]
+            source_vector = self._concept_vector(db, tenant_id, concept_id)
+
+            candidates: list[dict[str, Any]] = []
+            other_rows = db.execute(
+                "select id, label, domain from concepts "
+                "where tenant_id = ? and id != ?",
+                (tenant_id, concept_id),
+            ).fetchall()
+            for row in other_rows:
+                candidates.append(
+                    {
+                        "concept_id": row["id"],
+                        "label": row["label"],
+                        "domain": row["domain"],
+                        "vector": self._concept_vector(db, tenant_id, row["id"]),
+                    }
+                )
+
+        analogies = rank_analogies(
+            source_domain=source_domain,
+            source_vector=source_vector,
+            candidates=candidates,
+            limit=limit,
+        )
+        available = source_vector is not None and bool(analogies)
+        return {
+            "source_concept_id": concept_id,
+            "source_domain": source_domain,
+            "analogies_available": available,
+            "analogies": analogies if available else [],
+        }
+
+    def record_experiment_review(
+        self,
+        *,
+        tenant_id: str,
+        experiment_id: str,
+        result_class: str,
+        key_metrics: list[dict[str, Any]] | None = None,
+        notes: str = "",
+        concept_ids: list[str] | None = None,
+        actor: str = "user",
+        now: datetime | None = None,
+    ) -> dict[str, Any]:
+        """Persist a structured experiment review + hard-bind mastery (R9.1, R9.2).
+
+        Every concept in ``concept_ids`` is graded via :meth:`grade_concept`
+        with the SM-2 grade derived from ``result_class``
+        (``success=5, partial=3, fail=1``) and ``source="experiment_review"``
+        so the mastery curve reflects real-world outcomes (R9.2). A
+        single ``experiment_review.recorded`` audit row is emitted.
+
+        Concepts that do not exist for the tenant are skipped rather than
+        aborting the whole review, so a partially-stale ``concept_ids``
+        list still records the review and binds the concepts that remain.
+        """
+
+        import json as _json
+
+        from .mastery import grade_to_sm2
+        from .reality_layers import ExperimentReview, KeyMetric
+
+        current = now or datetime.now(timezone.utc)
+        review_id = _new_id("exr")
+        metrics = [KeyMetric.from_dict(m) for m in (key_metrics or [])]
+        review = ExperimentReview(
+            id=review_id,
+            tenant_id=tenant_id,
+            experiment_id=experiment_id,
+            result_class=result_class,  # type: ignore[arg-type]
+            key_metrics=metrics,
+            notes=notes or "",
+            created_at=current.isoformat(),
+        )
+
+        with self._lock, self._connect() as db:
+            db.execute(
+                """
+                insert into experiment_reviews(
+                  id, tenant_id, experiment_id, result_class,
+                  key_metrics_json, metric_breach, notes, created_at
+                ) values (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    review_id,
+                    tenant_id,
+                    experiment_id,
+                    result_class,
+                    _json.dumps(
+                        [m.to_dict() for m in metrics], ensure_ascii=False
+                    ),
+                    1 if review.metric_breach else 0,
+                    notes or "",
+                    current.isoformat(),
+                ),
+            )
+
+        # Mastery hard-binding: grade every linked concept (R9.2).
+        grade = grade_to_sm2(result_class)  # type: ignore[arg-type]
+        graded: list[str] = []
+        for concept_id in concept_ids or []:
+            try:
+                self.grade_concept(
+                    tenant_id=tenant_id,
+                    concept_id=concept_id,
+                    grade=grade,
+                    actor=actor,
+                    now=current,
+                    source="experiment_review",
+                )
+                graded.append(concept_id)
+            except KeyError:
+                # Stale concept id — skip, but keep recording the review.
+                continue
+
+        self._record_audit(
+            tenant_id=tenant_id,
+            actor=actor,
+            action=audit_events.EXPERIMENT_REVIEW_RECORDED,
+            subject=experiment_id,
+            payload={
+                "experiment_id": experiment_id,
+                "result_class": result_class,
+                "graded_concepts": graded,
+                "metric_breach": review.metric_breach,
+            },
+        )
+
+        return {"review": review.to_dict(), "graded_concepts": graded}
+
+    def recent_experiment_result_classes(
+        self, *, tenant_id: str, limit: int = 20
+    ) -> list[str]:
+        """Return the tenant's recent experiment ``result_class`` values.
+
+        Ordered oldest-to-newest within the most-recent ``limit`` rows so
+        :func:`skill_chain.count_trailing_fails` can read the trailing
+        failure streak straight off the tail (R9.3).
+        """
+
+        with self._lock, self._connect() as db:
+            rows = db.execute(
+                "select result_class from experiment_reviews "
+                "where tenant_id = ? order by created_at desc limit ?",
+                (tenant_id, max(1, limit)),
+            ).fetchall()
+        return [row["result_class"] for row in reversed(rows)]
+
+    # ---- learning dashboard (Task 5.1-5.4, R10, read-only) ------------
+
+    def dashboard_mastery(self, *, tenant_id: str) -> dict[str, Any]:
+        """Mastery heatmap grouped by concept domain (R10.1.a, R10.6)."""
+
+        concepts = self.list_concepts(tenant_id=tenant_id)
+        groups: dict[str, list[Concept]] = {}
+        for concept in concepts:
+            key = concept.domain or "uncategorised"
+            groups.setdefault(key, []).append(concept)
+
+        domains: list[dict[str, Any]] = []
+        for domain in sorted(groups):
+            members = groups[domain]
+            scores = [c.mastery_score for c in members]
+            domains.append(
+                {
+                    "domain": domain,
+                    "count": len(members),
+                    "avg_mastery": sum(scores) / len(scores) if scores else 0.0,
+                    "concepts": [
+                        {
+                            "id": c.id,
+                            "label": c.label,
+                            "mastery_score": c.mastery_score,
+                            "next_due_at": c.next_due_at,
+                        }
+                        for c in members
+                    ],
+                }
+            )
+        return {"domains": domains, "concept_count": len(concepts)}
+
+    def dashboard_calibration(self, *, tenant_id: str) -> dict[str, Any]:
+        """Calibration curve + Brier score for the tenant (R10.1.b)."""
+
+        from . import calibration as calibration_mod
+
+        records = calibration_mod.list_calibration_records(
+            core=self, tenant_id=tenant_id
+        )
+        resolved = [
+            r
+            for r in records
+            if r.brier_score is not None and r.binary_value is not None
+        ]
+        preds = [float(r.confidence) for r in resolved]
+        outcomes = [int(r.binary_value) for r in resolved]  # type: ignore[arg-type]
+
+        bins = calibration_mod.calibration_curve(preds, outcomes) if resolved else []
+        brier = calibration_mod.brier_score(preds, outcomes) if resolved else None
+        return {
+            "calibration_score": calibration_mod.calibration_score(records),
+            "brier_score": brier,
+            "resolved_count": len(resolved),
+            "total_count": len(records),
+            "bins": [
+                {
+                    "lo": b.lo,
+                    "hi": b.hi,
+                    "count": b.count,
+                    "mean_pred": b.mean_pred,
+                    "empirical_freq": b.empirical_freq,
+                }
+                for b in bins
+            ],
+        }
+
+    def dashboard_skill_chain(self, *, tenant_id: str) -> dict[str, Any]:
+        """Skill-chain completion rate grouped by problem_type (R10.1.c)."""
+
+        from . import skill_chain as skill_chain_mod
+
+        # Ensure the chain definitions are loaded so ``get_chain`` resolves
+        # problem_type + step counts (idempotent — skips loaded paths).
+        skill_chain_mod.load_all()
+
+        with self._lock, self._connect() as db:
+            rows = db.execute(
+                "select chain_id, step_idx from skill_chains_state "
+                "where tenant_id = ?",
+                (tenant_id,),
+            ).fetchall()
+
+        by_type: dict[str, list[float]] = {}
+        step_reach: dict[str, list[int]] = {}
+        for row in rows:
+            chain = skill_chain_mod.get_chain(row["chain_id"])
+            if chain is None:
+                continue
+            total = max(len(chain.steps), 1)
+            problem_type = chain.problem_type
+            completion = min(1.0, (int(row["step_idx"]) + 1) / total)
+            by_type.setdefault(problem_type, []).append(completion)
+            reach = step_reach.setdefault(problem_type, [0] * total)
+            for step in range(min(int(row["step_idx"]) + 1, total)):
+                reach[step] += 1
+
+        problem_types: list[dict[str, Any]] = []
+        for problem_type in sorted(by_type):
+            completions = by_type[problem_type]
+            chains = len(completions)
+            reached = step_reach.get(problem_type, [])
+            problem_types.append(
+                {
+                    "problem_type": problem_type,
+                    "chains": chains,
+                    "avg_completion": sum(completions) / chains if chains else 0.0,
+                    "step_retention": [
+                        count / chains if chains else 0.0 for count in reached
+                    ],
+                }
+            )
+        return {"problem_types": problem_types}
+
+    def dashboard_decay(
+        self, *, tenant_id: str, horizon_days: int = 30
+    ) -> dict[str, Any]:
+        """Concept decay curves projected from ``last_practiced_at`` (R10.1.d)."""
+
+        from .mastery import decay as decay_fn
+
+        concepts = self.list_concepts(tenant_id=tenant_id)
+        curves: list[dict[str, Any]] = []
+        sample_days = [0, 1, 3, 7, 14, horizon_days]
+        for concept in concepts:
+            if not concept.last_practiced_at:
+                continue
+            lam = concept.decay_lambda or 0.05
+            curves.append(
+                {
+                    "concept_id": concept.id,
+                    "label": concept.label,
+                    "mastery_score": concept.mastery_score,
+                    "last_practiced_at": concept.last_practiced_at,
+                    "decay_lambda": lam,
+                    "projection": [
+                        {
+                            "day": day,
+                            "score": decay_fn(concept.mastery_score, lam, float(day)),
+                        }
+                        for day in sample_days
+                    ],
+                }
+            )
+        return {"curves": curves, "horizon_days": horizon_days}
 
     def audit_log(self, *, tenant_id: str, limit: int = 40) -> list[dict[str, Any]]:
         with self._lock, self._connect() as db:
@@ -3173,6 +3548,18 @@ def _index_tokens(db: sqlite3.Connection, item_id: str, text: str) -> None:
         "insert into item_tokens(item_id, token, weight) values(?, ?, ?)",
         [(item_id, token, count / total) for token, count in counts.items()],
     )
+
+
+def _minmax_norm(value: float, lo: float, hi: float) -> float:
+    """Min-max normalise ``value`` into ``[0, 1]`` (hybrid retrieval, R8.2).
+
+    A degenerate range (``hi == lo``) maps every value to ``0.0`` so a
+    single-candidate result set does not get an artificial full score.
+    """
+
+    if hi <= lo:
+        return 0.0
+    return max(0.0, min(1.0, (value - lo) / (hi - lo)))
 
 
 def _fts_search(db: sqlite3.Connection, tenant_id: str, query: str, limit: int) -> list[tuple[str, float]]:

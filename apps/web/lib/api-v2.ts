@@ -467,3 +467,77 @@ export type ModelSlotConfig = {
   enabled: boolean;
   display_label: string;
 };
+
+
+// ---------------------------------------------------------------------------
+// Learning dashboard (expert-coaching-loop, R10 — read-only surfaces)
+// ---------------------------------------------------------------------------
+
+export type MasteryDomain = {
+  domain: string;
+  count: number;
+  avg_mastery: number;
+  concepts: Array<{
+    id: string;
+    label: string;
+    mastery_score: number;
+    next_due_at: string | null;
+  }>;
+};
+
+export type DashboardMastery = {
+  metadata: Record<string, unknown>;
+  domains: MasteryDomain[];
+  concept_count: number;
+};
+
+export type CalibrationBin = {
+  lo: number;
+  hi: number;
+  count: number;
+  mean_pred: number;
+  empirical_freq: number;
+};
+
+export type DashboardCalibration = {
+  metadata: Record<string, unknown>;
+  calibration_score: number;
+  brier_score: number | null;
+  resolved_count: number;
+  total_count: number;
+  bins: CalibrationBin[];
+};
+
+export type SkillChainProgress = {
+  problem_type: string;
+  chains: number;
+  avg_completion: number;
+  step_retention: number[];
+};
+
+export type DashboardSkillChain = {
+  metadata: Record<string, unknown>;
+  problem_types: SkillChainProgress[];
+};
+
+export type DecayCurve = {
+  concept_id: string;
+  label: string;
+  mastery_score: number;
+  last_practiced_at: string;
+  decay_lambda: number;
+  projection: Array<{ day: number; score: number }>;
+};
+
+export type DashboardDecay = {
+  metadata: Record<string, unknown>;
+  curves: DecayCurve[];
+  horizon_days: number;
+};
+
+export const dashboardApi = {
+  mastery: () => apiFetch<DashboardMastery>("/api/v2/dashboard/mastery"),
+  calibration: () => apiFetch<DashboardCalibration>("/api/v2/dashboard/calibration"),
+  skillChain: () => apiFetch<DashboardSkillChain>("/api/v2/dashboard/skill-chain"),
+  decay: () => apiFetch<DashboardDecay>("/api/v2/dashboard/decay"),
+};

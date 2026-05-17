@@ -42,6 +42,65 @@ REQUIRED_COACH_KEYS: frozenset[str] = frozenset(
 )
 
 
+# Required keys for the expert-coaching-loop P1 milestone (decision /
+# practice / evidence-gathering), introduced by Task 3.17.
+REQUIRED_P1_KEYS: frozenset[str] = frozenset(
+    {
+        "decision.predicted_outcome",
+        "decision.confidence",
+        "decision.verdict.pending",
+        "decision.review.title",
+        "decision.review.brier",
+        "decision.review.log_loss",
+        "practice.due.title",
+        "practice.cloze",
+        "practice.counterexample",
+        "practice.socratic",
+        "practice.grade.success",
+        "practice.grade.partial",
+        "practice.grade.fail",
+        "evidence.gathering.insufficient",
+        "evidence.gathering.searching",
+        "evidence.gathering.pending_review",
+        "evidence.gathering.approved",
+        "evidence.gathering.rejected",
+        "evidence.verdict.blocked",
+    }
+)
+
+
+# Required keys for the expert-coaching-loop P2 milestone (metacognition
+# / analogy / experiment-review), introduced by Task 4.13.
+REQUIRED_P2_KEYS: frozenset[str] = frozenset(
+    {
+        "metacog.questions_title",
+        "metacog.confidence_prompt",
+        "analogy.title",
+        "analogy.cross_domain",
+        "analogy.unavailable",
+        "experiment.review.title",
+        "experiment.review.result_class",
+        "experiment.review.metric_breach",
+        "experiment.review.chain_switch",
+        "experiment.review.human_review",
+    }
+)
+
+
+# Required keys for the expert-coaching-loop P3 milestone (learning
+# dashboard), introduced by Task 5.7.
+REQUIRED_DASHBOARD_KEYS: frozenset[str] = frozenset(
+    {
+        "dash.title",
+        "dash.mastery",
+        "dash.calibration",
+        "dash.skill_chain",
+        "dash.decay",
+        "dash.empty",
+    }
+)
+
+
 _KEY_LINE_RE = re.compile(r'^\s*"([^"\\]+)"\s*:', re.MULTILINE)
 
 
@@ -110,4 +169,61 @@ def test_coach_keys_zh_en_parity() -> None:
     )
     assert not missing_en, (
         f"required coach/rubric keys missing from enUS: {sorted(missing_en)}"
+    )
+
+
+def test_p1_keys_zh_en_parity() -> None:
+    """The P1 decision/practice/evidence keys exist in both dictionaries."""
+
+    assert I18N_FILE.exists(), f"missing {I18N_FILE}"
+    text = I18N_FILE.read_text(encoding="utf-8")
+
+    zh_keys = _keys(_extract_dict_block(text, "const zhCN"))
+    en_keys = _keys(_extract_dict_block(text, "const enUS"))
+
+    missing_zh = REQUIRED_P1_KEYS - zh_keys
+    missing_en = REQUIRED_P1_KEYS - en_keys
+    assert not missing_zh, (
+        f"required P1 keys missing from zhCN: {sorted(missing_zh)}"
+    )
+    assert not missing_en, (
+        f"required P1 keys missing from enUS: {sorted(missing_en)}"
+    )
+
+
+def test_p2_keys_zh_en_parity() -> None:
+    """The P2 metacognition/analogy/experiment-review keys exist in both."""
+
+    assert I18N_FILE.exists(), f"missing {I18N_FILE}"
+    text = I18N_FILE.read_text(encoding="utf-8")
+
+    zh_keys = _keys(_extract_dict_block(text, "const zhCN"))
+    en_keys = _keys(_extract_dict_block(text, "const enUS"))
+
+    missing_zh = REQUIRED_P2_KEYS - zh_keys
+    missing_en = REQUIRED_P2_KEYS - en_keys
+    assert not missing_zh, (
+        f"required P2 keys missing from zhCN: {sorted(missing_zh)}"
+    )
+    assert not missing_en, (
+        f"required P2 keys missing from enUS: {sorted(missing_en)}"
+    )
+
+
+def test_dashboard_keys_zh_en_parity() -> None:
+    """The learning-dashboard ``dash.*`` keys exist in both dictionaries."""
+
+    assert I18N_FILE.exists(), f"missing {I18N_FILE}"
+    text = I18N_FILE.read_text(encoding="utf-8")
+
+    zh_keys = _keys(_extract_dict_block(text, "const zhCN"))
+    en_keys = _keys(_extract_dict_block(text, "const enUS"))
+
+    missing_zh = REQUIRED_DASHBOARD_KEYS - zh_keys
+    missing_en = REQUIRED_DASHBOARD_KEYS - en_keys
+    assert not missing_zh, (
+        f"required dashboard keys missing from zhCN: {sorted(missing_zh)}"
+    )
+    assert not missing_en, (
+        f"required dashboard keys missing from enUS: {sorted(missing_en)}"
     )

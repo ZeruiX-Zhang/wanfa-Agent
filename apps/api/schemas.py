@@ -480,6 +480,48 @@ class PracticeGradeResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Experiment review (expert-coaching-loop, R9.1, R9.2)
+# ---------------------------------------------------------------------------
+
+
+class ExperimentKeyMetric(BaseModel):
+    """One measured outcome of an experiment (R9.1)."""
+
+    name: str = Field(min_length=1)
+    target: float
+    value: float
+    tolerance: float = Field(default=0.0, ge=0.0)
+
+
+class ExperimentReviewRequest(BaseModel):
+    """Request body for ``POST /api/v2/experiments/{id}/review`` (R9.1, R9.2).
+
+    ``concept_ids`` lists the concepts this experiment validated; each is
+    hard-bound to the SM-2 mastery curve at review time (R9.2). An empty
+    list is valid — the review still persists (an unlinked experiment).
+    """
+
+    result_class: Literal["success", "partial", "fail"]
+    key_metrics: list[ExperimentKeyMetric] = Field(default_factory=list)
+    notes: str = ""
+    concept_ids: list[str] = Field(default_factory=list)
+
+
+class ExperimentReviewResponse(BaseModel):
+    """Response shape for ``POST /api/v2/experiments/{id}/review``.
+
+    ``metadata.mode`` is ``"pending-review"`` because the review write
+    appends to ``experiment_reviews`` and grades every linked concept
+    (R9.2, R11.5).
+    """
+
+    metadata: AdapterMetadata
+    review: dict[str, Any]
+    graded_concepts: list[str] = Field(default_factory=list)
+    consecutive_fail_action: str | None = None
+
+
+# ---------------------------------------------------------------------------
 # Decision log creation (expert-coaching-loop, R4.1, R6.3, R11.5)
 # ---------------------------------------------------------------------------
 
